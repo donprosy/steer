@@ -14,7 +14,7 @@ class AuthToken(db.Model):
     __tablename__ = "auth_tokens"
     __table_args__ = (
         db.CheckConstraint(
-            "purpose IN ('email_verification', 'password_reset')",
+            "purpose IN ('email_verification', 'password_reset', 'login_otp')",
             name="ck_auth_token_purpose",
         ),
     )
@@ -29,5 +29,6 @@ class AuthToken(db.Model):
     expires_at = db.Column(db.DateTime(timezone=True), nullable=False, index=True)
     used_at = db.Column(db.DateTime(timezone=True), nullable=True)
     attempts = db.Column(db.Integer, nullable=False, default=0)
+    remember_me = db.Column(db.Boolean, nullable=False, default=False)
 
     user = db.relationship("User", back_populates="auth_tokens")

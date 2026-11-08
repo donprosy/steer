@@ -1,4 +1,6 @@
 from datetime import timedelta
+import json
+from types import SimpleNamespace
 
 import pytest
 from sqlalchemy import select
@@ -7,6 +9,7 @@ from app import db
 from app.models import AuthSession, AuthToken, Business, BusinessMembership, User
 from app.services.auth_service import (
     EMAIL_VERIFICATION,
+    LOGIN_OTP,
     PASSWORD_RESET,
     create_session,
     utc_now,
@@ -95,10 +98,26 @@ def test_registration_verification_login_session_and_logout(
         headers=csrf_headers,
         json={"email": "OWNER@example.com", "password": PASSWORD, "remember_me": True},
     )
-    assert login.status_code == 200
-    assert "Max-Age=" in login.headers["Set-Cookie"]
-    assert "HttpOnly" in login.headers["Set-Cookie"]
-    assert login.get_json()["user"]["email"] == email
+    assert login.status_code == 202
+    assert "Set-Cookie" not in login.headers
+    challenge_id = login.get_json()["challenge_id"]
+    login_email, purpose, login_code = sent_account_emails.pop()
+    assert login_email == email
+    assert purpose == LOGIN_OTP
+    with app.app_context():
+        token = db.session.get(AuthToken, challenge_id)
+        assert token.token_hash != login_code
+        assert token.remember_me is True
+
+    completed = client.post(
+        f"{AUTH_URL}/otp/verify",
+        headers=csrf_headers,
+        json={"challenge_id": challenge_id, "code": login_code},
+    )
+    assert completed.status_code == 200
+    assert "Max-Age=" in completed.headers["Set-Cookie"]
+    assert "HttpOnly" in completed.headers["Set-Cookie"]
+    assert completed.get_json()["user"]["email"] == email
 
 
 def test_registration_rejects_duplicates_invalid_email_and_invalid_password(
@@ -142,6 +161,50 @@ def test_registration_delivery_failure_rolls_back_account(
     with app.app_context():
         assert db.session.execute(select(User)).scalars().all() == []
         assert db.session.execute(select(AuthToken)).scalars().all() == []
+
+
+def test_account_otp_uses_resend_api_and_html_template(app, monkeypatch):
+    from app.services import email_service
+
+    captured = {}
+
+    class Response:
+        status = 200
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            return False
+
+    def fake_urlopen(request, timeout):
+        captured["url"] = request.full_url
+        captured["authorization"] = request.get_header("Authorization")
+        captured["timeout"] = timeout
+        captured["message"] = json.loads(request.data.decode("utf-8"))
+        return Response()
+
+    monkeypatch.setattr(email_service, "urlopen", fake_urlopen)
+    app.config.update(
+        AUTH_EMAIL_SENDER=None,
+        RESEND_API_KEY="test-resend-key",
+        MAIL_FROM="noreply@example.test",
+    )
+
+    with app.app_context():
+        email_service.send_account_token(
+            SimpleNamespace(email="owner@example.test", display_name="Business Owner"),
+            LOGIN_OTP,
+            "012345",
+        )
+
+    assert captured["url"] == "https://api.resend.com/emails"
+    assert captured["authorization"] == "Bearer test-resend-key"
+    assert captured["timeout"] == 15
+    assert captured["message"]["to"] == ["owner@example.test"]
+    assert captured["message"]["from"] == "STEER <noreply@example.test>"
+    assert "012345" in captured["message"]["html"]
+    assert "expires in <strong>10 minutes</strong>" in captured["message"]["html"]
 
 
 def test_invalid_registration_is_validated_before_email_configuration(client, csrf_headers):
@@ -242,6 +305,15 @@ def test_password_reset_otp_purpose_attempts_and_old_session_revocation(
         headers=csrf_headers,
         json={"email": "owner@example.com", "password": PASSWORD},
     )
+    assert login.status_code == 202
+    login_challenge = login.get_json()["challenge_id"]
+    _, purpose, login_code = sent_account_emails.pop()
+    assert purpose == LOGIN_OTP
+    login = client.post(
+        f"{AUTH_URL}/otp/verify",
+        headers=csrf_headers,
+        json={"challenge_id": login_challenge, "code": login_code},
+    )
     assert login.status_code == 200
     old_session_cookie = login.headers["Set-Cookie"].split(";", 1)[0].split("=", 1)[1]
 
@@ -277,16 +349,39 @@ def test_password_reset_otp_purpose_attempts_and_old_session_revocation(
 
     client.set_cookie("dpbm_auth", old_session_cookie)
     assert client.get(f"{AUTH_URL}/me").status_code == 401
-    assert client.post(
+    wrong_password = client.post(
         f"{AUTH_URL}/login",
         headers=csrf_headers,
         json={"email": email, "password": PASSWORD},
-    ).status_code == 401
-    assert client.post(
+    )
+    assert wrong_password.status_code == 401
+
+    with app.app_context():
+        login_token = db.session.execute(
+            select(AuthToken)
+            .where(AuthToken.purpose == LOGIN_OTP)
+            .order_by(AuthToken.created_at.desc())
+        ).scalars().first()
+        login_token.created_at = (
+            utc_now() - timedelta(seconds=app.config["AUTH_OTP_RESEND_SECONDS"] + 1)
+        ).replace(tzinfo=None)
+        db.session.commit()
+
+    new_password_login = client.post(
         f"{AUTH_URL}/login",
         headers=csrf_headers,
         json={"email": email, "password": "a-different-long-password"},
-    ).status_code == 200
+    )
+    assert new_password_login.status_code == 202
+    new_challenge = new_password_login.get_json()["challenge_id"]
+    _, purpose, new_login_code = sent_account_emails.pop()
+    assert purpose == LOGIN_OTP
+    completed_login = client.post(
+        f"{AUTH_URL}/otp/verify",
+        headers=csrf_headers,
+        json={"challenge_id": new_challenge, "code": new_login_code},
+    )
+    assert completed_login.status_code == 200
 
     with app.app_context():
         token = db.session.execute(
@@ -425,6 +520,15 @@ def test_login_rejects_wrong_password_and_supports_session_cookie(
         headers=csrf_headers,
         json={"email": "owner@example.com", "password": PASSWORD, "remember_me": True},
     )
+    assert remember_login.status_code == 202
+    challenge_id = remember_login.get_json()["challenge_id"]
+    _, purpose, login_code = sent_account_emails.pop()
+    assert purpose == LOGIN_OTP
+    remember_login = client.post(
+        f"{AUTH_URL}/otp/verify",
+        headers=csrf_headers,
+        json={"challenge_id": challenge_id, "code": login_code},
+    )
     assert remember_login.status_code == 200
     assert "Max-Age=" in remember_login.headers["Set-Cookie"]
     assert "HttpOnly" in remember_login.headers["Set-Cookie"]
@@ -434,6 +538,76 @@ def test_login_rejects_wrong_password_and_supports_session_cookie(
             select(AuthSession).order_by(AuthSession.created_at.desc())
         ).scalars().first()
         assert session.remember_me is True
+
+
+def test_login_otp_attempts_and_resend_rotate_the_challenge(
+    app, client, csrf_headers, sent_account_emails
+):
+    verification_code = create_verified_account(client, csrf_headers, sent_account_emails)
+    assert verify_account(
+        client, csrf_headers, "owner@example.com", verification_code
+    ).status_code == 200
+
+    started = client.post(
+        f"{AUTH_URL}/otp/send",
+        headers=csrf_headers,
+        json={"email": "owner@example.com", "password": PASSWORD},
+    )
+    assert started.status_code == 202
+    old_challenge = started.get_json()["challenge_id"]
+    _, purpose, old_code = sent_account_emails.pop()
+    assert purpose == LOGIN_OTP
+
+    invalid_resend = client.post(
+        f"{AUTH_URL}/otp/resend",
+        headers=csrf_headers,
+        json={"challenge_id": "00000000-0000-0000-0000-000000000000"},
+    )
+    assert invalid_resend.status_code == 202
+    assert "challenge_id" not in invalid_resend.get_json()
+
+    wrong_code = "111111" if old_code != "111111" else "222222"
+    for _ in range(app.config["AUTH_OTP_MAX_ATTEMPTS"]):
+        response = client.post(
+            f"{AUTH_URL}/otp/verify",
+            headers=csrf_headers,
+            json={"challenge_id": old_challenge, "code": wrong_code},
+        )
+        assert response.status_code == 400
+    assert client.post(
+        f"{AUTH_URL}/otp/verify",
+        headers=csrf_headers,
+        json={"challenge_id": old_challenge, "code": old_code},
+    ).status_code == 400
+
+    with app.app_context():
+        token = db.session.get(AuthToken, old_challenge)
+        token.created_at = (
+            utc_now() - timedelta(seconds=app.config["AUTH_OTP_RESEND_SECONDS"] + 1)
+        ).replace(tzinfo=None)
+        db.session.commit()
+
+    resent = client.post(
+        f"{AUTH_URL}/otp/resend",
+        headers=csrf_headers,
+        json={"challenge_id": old_challenge},
+    )
+    assert resent.status_code == 202
+    new_challenge = resent.get_json()["challenge_id"]
+    assert new_challenge != old_challenge
+    _, purpose, new_code = sent_account_emails.pop()
+    assert purpose == LOGIN_OTP
+    assert client.post(
+        f"{AUTH_URL}/otp/verify",
+        headers=csrf_headers,
+        json={"challenge_id": old_challenge, "code": old_code},
+    ).status_code == 400
+    completed = client.post(
+        f"{AUTH_URL}/otp/verify",
+        headers=csrf_headers,
+        json={"challenge_id": new_challenge, "code": new_code},
+    )
+    assert completed.status_code == 200
 
 
 def test_csrf_and_auth_security_headers(client):
@@ -534,6 +708,7 @@ def test_production_rejects_smtp_without_tls(monkeypatch):
 
     monkeypatch.setenv("APP_ENV", "production")
     monkeypatch.setenv("SECRET_KEY", "a-production-secret-key-that-is-long-enough")
+    monkeypatch.setenv("RESEND_API_KEY", "test-resend-key")
 
     with pytest.raises(RuntimeError, match="SMTP delivery must use TLS"):
         create_app(

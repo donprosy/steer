@@ -17,6 +17,8 @@ Implemented and planned endpoints use the `/api/v1` prefix and JSON request/resp
 |---|---|
 | `GET /api/v1/health` | Minimal process health check; implemented. Does not expose environment settings or verify database readiness. |
 
+The existing `service` response identifier (`don-prosy-business-manager`) is retained for API compatibility; it is a technical identifier, not the public product name.
+
 ## Planned endpoint groups
 
 ### Authentication
@@ -24,16 +26,19 @@ Implemented and planned endpoints use the `/api/v1` prefix and JSON request/resp
 | Method and path | Responsibility |
 |---|---|
 | `GET /api/v1/auth/csrf` | Return a CSRF token for same-origin requests. Send it as `X-CSRFToken` on every `POST`, `PUT`, `PATCH`, and `DELETE`. |
-| `POST /api/v1/auth/register` | Validate name, email, password, confirmation, and business name; atomically create an unverified account, owner membership, and verification OTP only if SMTP delivery succeeds. Returns `202`; duplicate email returns `409`. SMTP must be configured. |
-| `POST /api/v1/auth/login` | Verify credentials and email status; create a server-side session and set an opaque `HttpOnly` cookie. Accepts optional `remember_me`. |
+| `POST /api/v1/auth/register` | Validate name, email, password, confirmation, and business name; atomically create an unverified account, owner membership, and verification OTP only if Resend delivery succeeds. Returns `202`; duplicate email returns `409`. Configure `RESEND_API_KEY` and a verified sender address. |
+| `POST /api/v1/auth/login` | Verify credentials and email status, send a login OTP, and return a pending `challenge_id`; accepts optional `remember_me`. Does not create a session. |
+| `POST /api/v1/auth/otp/send` | Alias for the password-check step at `/login`; accepts email, password, and optional `remember_me`, and sends a login OTP. |
+| `POST /api/v1/auth/otp/resend` | Resend a login OTP using its `challenge_id`; enforces the per-account 60-second cooldown and generic responses for invalid challenges. |
+| `POST /api/v1/auth/otp/verify` | Verify a login `challenge_id` and 6-digit code; issues the server-side session and opaque `HttpOnly` cookie only on success. |
 | `POST /api/v1/auth/logout` | Revoke the current server-side session and clear its cookie. |
 | `GET /api/v1/auth/me` | Return the current identity and active business memberships; requires authentication. |
-| `POST /api/v1/auth/verification-requests` | Send a 6-digit verification OTP without disclosing whether an account is eligible. Enforces per-IP rate limits and a per-account 60-second cooldown. |
+| `POST /api/v1/auth/verification-requests` | Send a 6-digit verification OTP through Resend without disclosing whether an account is eligible. Enforces per-IP rate limits and a per-account 60-second cooldown. |
 | `POST /api/v1/auth/email-verifications` | Verify a matching email and 6-digit verification OTP; expires after 10 minutes, allows up to five incorrect attempts, and creates the signed-in session on success. |
-| `POST /api/v1/auth/password-reset-requests` | Start privacy-preserving recovery by emailing a 6-digit reset OTP; requires configured SMTP and enforces a 60-second cooldown. |
+| `POST /api/v1/auth/password-reset-requests` | Start privacy-preserving recovery by emailing a 6-digit reset OTP through Resend; enforces a 60-second cooldown. |
 | `POST /api/v1/auth/password-resets` | Validate email and reset OTP, require matching new-password confirmation, and revoke all existing sessions. |
 
-OTP endpoints accept `{"email":"person@example.com","code":"012345"}`. Registration also accepts `confirm_password`; password reset accepts `password` and `confirm_password`. OTP values are generated with a cryptographic random generator, stored as a keyed HMAC digest, scoped to user and purpose, and never returned in API responses. They expire after 10 minutes, are single-use, and stop accepting guesses after five incorrect attempts. New codes invalidate previous codes of the same purpose. Resend endpoints return a generic response during cooldown and for ineligible accounts to reduce account enumeration.
+Email verification and password reset OTP endpoints accept `{"email":"person@example.com","code":"012345"}`. Login OTP endpoints accept `{"email":"person@example.com","password":"...","remember_me":false}` to send a code, `{"challenge_id":"..."}` to resend, and `{"challenge_id":"...","code":"012345"}` to verify. Registration also accepts `confirm_password`; password reset accepts `password` and `confirm_password`. OTP values are generated with a cryptographic random generator, stored as a keyed HMAC digest, scoped to user and purpose, and never returned in API responses. They expire after 10 minutes, are single-use, and stop accepting guesses after five incorrect attempts. New codes invalidate previous codes of the same purpose. Resend endpoints return a generic response during cooldown and for ineligible accounts to reduce account enumeration.
 
 Auth cookies are same-origin, `HttpOnly`, and `SameSite=Lax`; production also sets `Secure` and uses the `__Host-dpbm_auth` cookie name. Authentication credentials are never stored in browser local storage.
 
@@ -45,7 +50,7 @@ Mutating endpoints are CSRF-protected. The frontend fetches `/api/v1/auth/csrf` 
 {"error":{"code":"validation_error","message":"Enter a valid email address."}}
 ```
 
-Unverified accounts cannot sign in. Successful OTP verification creates an authenticated session. Email-dependent operations return `503` when SMTP is not configured or delivery fails. Configure a real SMTP server for local use; no provider credentials are included in the repository.
+Unverified accounts cannot sign in. Successful login OTP verification creates an authenticated session. Email-dependent OTP operations return `503` when Resend is not configured or delivery fails. Set `RESEND_API_KEY` and `MAIL_FROM` to a sender address verified with Resend. Non-OTP account notifications continue to use optional SMTP settings.
 
 ### Businesses
 

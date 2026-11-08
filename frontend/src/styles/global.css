@@ -30,7 +30,7 @@ a { color: inherit; }
 button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible { outline: 3px solid rgba(37, 99, 235, .28); outline-offset: 3px; }
 
 .brand { display: inline-flex; align-items: center; gap: 10px; text-align: left; }
-.brand__mark { display: grid; width: 35px; height: 35px; place-items: center; border-radius: 11px; background: var(--blue); color: white; font-family: Manrope, sans-serif; font-size: 23px; font-weight: 800; letter-spacing: -3px; line-height: 1; padding: 0 3px 4px 0; box-shadow: 0 4px 10px rgba(37, 99, 235, .2); }
+.brand__mark { display: grid; width: 35px; height: 35px; place-items: center; border-radius: 11px; background: var(--blue); color: white; font-family: Manrope, sans-serif; font-size: 20px; font-weight: 800; letter-spacing: -1px; line-height: 1; box-shadow: 0 4px 10px rgba(37, 99, 235, .2); }
 .brand__name { display: grid; gap: 1px; color: var(--navy); font-family: Manrope, sans-serif; font-size: 15px; font-weight: 800; letter-spacing: -.5px; line-height: 1.05; }
 .brand__name span { color: #8490a2; font-family: "DM Sans", sans-serif; font-size: 9px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; }
 .brand--light .brand__name { color: #fff; }

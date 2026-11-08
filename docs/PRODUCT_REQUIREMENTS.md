@@ -1,8 +1,12 @@
-# Product Requirements — Don Prosy Business Manager
+# Product Requirements — STEER
 
 ## Product summary
 
-Don Prosy Business Manager is a web-based SaaS platform that gives small business owners one dependable place to organise customers, products, inventory, sales, expenses, and business performance. A future text-based AI assistant will help users interpret their own business information and produce practical summaries.
+STEER is an AI-powered business management platform designed to help business owners manage their businesses, monitor performance, organise operations, and make smarter business decisions.
+
+**Tagline:** Take Control. Move Your Business Forward.
+
+The platform brings customers, products, inventory, sales, expenses, and performance into one dependable workspace. An AI assistant is planned to help users interpret authorised business information and produce practical summaries; AI services and live business data are not connected in the current demonstration.
 
 The first release should prioritise trustworthy core workflows, understandable financial summaries, and strong separation of each business's data. It should not attempt to be a full accounting or enterprise resource planning system.
 
@@ -84,4 +88,3 @@ Start with a focused single-business experience and a clear domain model. Valida
 Use an elegant, premium SaaS visual language: calm neutral surfaces, deep green/teal brand accents, restrained warm highlights, excellent readable typography, consistent spacing, and clear hierarchy. Dashboard cards and charts should foreground useful comparisons and accessible labels rather than decoration. Motion should be subtle, purposeful, and respect reduced-motion preferences. Design mobile-first layouts for real operational use. Avoid generic admin-template appearance, crowded screens, and visual effects that compete with the data.
 
 The Stage 1 frontend is only a responsive placeholder to verify the toolchain; it is not the final product UI or brand system.
-

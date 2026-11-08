@@ -4,9 +4,9 @@ import Icon from "./Icon.jsx";
 export function Brand({ light = false }) {
   return (
     <span className={`brand${light ? " brand--light" : ""}`}>
-      <span className="brand__mark">d</span>
+      <span className="brand__mark">S</span>
       <span className="brand__name">
-        Don Prosy<span>Business Manager</span>
+        STEER<span>BUSINESS PLATFORM</span>
       </span>
     </span>
   );
@@ -87,4 +87,3 @@ export function PageHeading({ eyebrow, title, description, action }) {
     </div>
   );
 }
-

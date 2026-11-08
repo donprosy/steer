@@ -4,6 +4,7 @@ import AccountActionPage from "./pages/AccountActionPage.jsx";
 import AuthPage from "./pages/AuthPage.jsx";
 import DashboardPage from "./pages/DashboardPage.jsx";
 import LandingPage from "./pages/LandingPage.jsx";
+import { Brand } from "./components/UI.jsx";
 import { AuthProvider, useAuth } from "./context/AuthContext.jsx";
 import "./styles/global.css";
 
@@ -53,7 +54,10 @@ function AppContent() {
     if (loading || !user) {
       return (
         <main className="auth-page auth-page--single">
-          <div className="auth-main"><p role="status">Loading your account…</p></div>
+          <div className="auth-main">
+            <Brand />
+            <p role="status">Loading your STEER workspace…</p>
+          </div>
         </main>
       );
     }

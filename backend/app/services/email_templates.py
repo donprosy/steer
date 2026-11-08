@@ -2,7 +2,7 @@
 
 from html import escape
 
-BRAND = "Don Prosy Business Manager"
+BRAND = "STEER"
 
 
 def _layout(preheader, heading, body):
@@ -37,15 +37,21 @@ def render_otp_email(display_name, purpose, code):
     if purpose == "email_verification":
         subject = "Verify your email address"
         heading = "Verify your email"
-        preheader = "Your Don Prosy verification code expires in 10 minutes."
+        preheader = "Your STEER verification code expires in 10 minutes."
         instruction = "Use this code to verify your email address:"
-        plain_subject = "Verify your Don Prosy Business Manager email"
+        plain_subject = "Verify your STEER email"
     elif purpose == "password_reset":
         subject = "Your password reset code"
         heading = "Reset your password"
         preheader = "Your password reset code expires in 10 minutes."
-        instruction = "Use this code to reset your Don Prosy account password:"
-        plain_subject = "Reset your Don Prosy Business Manager password"
+        instruction = "Use this code to reset your STEER account password:"
+        plain_subject = "Reset your STEER account password"
+    elif purpose == "login_otp":
+        subject = "Your sign-in code"
+        heading = "Sign in to STEER"
+        preheader = "Your STEER sign-in code expires in 10 minutes."
+        instruction = "Use this code to finish signing in to your STEER account:"
+        plain_subject = "Your STEER sign-in code"
     else:
         raise ValueError("Unsupported account email purpose.")
 
@@ -76,19 +82,19 @@ def render_notification_email(display_name, notification):
             "Email verified successfully",
             "Your email is verified",
             "Your email address has been verified successfully. You can now sign in and securely access your business workspace.",
-            "Your Don Prosy email address has been verified. You can now sign in and access your business workspace.",
+            "Your STEER email address has been verified. You can now sign in and access your business workspace.",
         ),
         "welcome": (
-            "Welcome to Don Prosy Business Manager",
-            "Welcome to Don Prosy",
+            "Welcome to STEER",
+            "Welcome to STEER",
             "Your account is ready. Sign in to manage your business workspace and continue setting up your account.",
-            "Welcome to Don Prosy Business Manager. Your account is ready. Sign in to access your business workspace.",
+            "Welcome to STEER. Your account is ready. Sign in to access your business workspace.",
         ),
         "password_changed": (
             "Your password was changed",
             "Your password has been changed",
-            "The password for your Don Prosy account was changed successfully. If you did not make this change, contact support immediately.",
-            "The password for your Don Prosy account was changed successfully. If you did not make this change, contact support immediately.",
+            "The password for your STEER account was changed successfully. If you did not make this change, contact support immediately.",
+            "The password for your STEER account was changed successfully. If you did not make this change, contact support immediately.",
         ),
     }
     try:

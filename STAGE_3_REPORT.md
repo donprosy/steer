@@ -74,7 +74,7 @@ Production launch is **not** ready until real SMTP, a strong persistent secret, 
 - Health endpoint — `GET /api/v1/health` returned healthy JSON.
 - Browser smoke check — login and registration pages rendered; registration displayed the explicit SMTP-not-configured response instead of reporting success. Final OTP browser flow was validated with the controlled test email backend at the API/service test level; real external SMTP was not available.
 - Git-ignore checks — `.env`, the local SQLite database, `.venv`, and `node_modules` are ignored. No credentials were created or read.
-- Repository scope — changes were made inside Don Prosy Business Manager only; Don Prosy AI was not accessed or modified.
+- Repository scope — changes were made inside the STEER project only; Don Prosy AI was not accessed or modified.
 
 ## Run locally
 

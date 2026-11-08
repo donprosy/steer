@@ -8,11 +8,11 @@ Security is a design constraint for every stage. Stage 3 implements the identity
 - Never store or log plaintext passwords, reset tokens, or authentication credentials.
 - **Implemented:** Generic login, verification-request, and password-recovery responses reduce account enumeration. Email verification is required before login.
 - **Implemented:** Rate-limit login, registration, verification, and recovery requests. Local development uses process-local limits; production configuration rejects in-memory rate-limit storage.
-- **Implemented:** Verification and recovery codes are cryptographically random six-digit OTPs. A keyed HMAC digest is stored with user/purpose scope, 10-minute expiry, five-attempt ceiling, and single-use state. A 60-second per-account resend cooldown and IP rate limits restrict abuse; issuing another code invalidates previous unused codes of that purpose.
+- **Implemented:** Login, verification, and recovery codes are cryptographically random six-digit OTPs. A keyed HMAC digest is stored with user/purpose scope, 10-minute expiry, five-attempt ceiling, and single-use state. Login challenges are only created after password verification; sessions are issued only after OTP verification. A 60-second per-account resend cooldown and IP rate limits restrict abuse; issuing another code invalidates previous unused codes of that purpose.
 
 ## Secure authentication
 
-**Implemented:** Opaque random session cookies backed by server-side session records containing only a SHA-256 token digest. Cookies are `HttpOnly`, `SameSite=Lax`, path `/`; production uses `Secure` and the `__Host-` prefix. Login creates a new session, standard sessions expire after 12 hours, remember-me sessions after 30 days, and logout/password reset revoke sessions. CSRF tokens protect mutations. The browser does not store bearer credentials or put authentication tokens in URLs.
+**Implemented:** Opaque random session cookies backed by server-side session records containing only a SHA-256 token digest. Cookies are `HttpOnly`, `SameSite=Lax`, path `/`; production uses `Secure` and the `__Host-` prefix. Login creates a new session only after password and OTP verification, standard sessions expire after 12 hours, remember-me sessions after 30 days, and logout/password reset revoke sessions. CSRF tokens protect mutations. The browser does not store bearer credentials or put authentication tokens in URLs.
 
 Enforce TLS in production. Never use Flask's development server in production. Set a strong secret key from an environment/secret manager and fail safely if production configuration is missing.
 
@@ -41,7 +41,7 @@ Enforce TLS in production. Never use Flask's development server in production. S
 
 ## Secrets and configuration
 
-- **Implemented:** Load sensitive values from environment variables or a managed secret store, never from committed source or frontend build variables. Production startup rejects missing/weak secret keys, in-memory rate limits, incomplete SMTP configuration, SMTP without TLS, and a non-HTTPS public URL. `run.py` refuses to start the Flask development server in production.
+- **Implemented:** Load sensitive values from environment variables or a managed secret store, never from committed source or frontend build variables. Production startup rejects missing/weak secret keys, missing Resend credentials/sender, in-memory rate limits, insecure configured SMTP, and a non-HTTPS public URL. `run.py` refuses to start the Flask development server in production.
 - `.env` is ignored by Git; `.env.example` contains placeholders only.
 - Rotate credentials when exposed and document production rotation procedures.
 - Separate development, test, and production credentials and databases.

@@ -18,6 +18,7 @@ from app.services.password_service import (
 
 EMAIL_VERIFICATION = "email_verification"
 PASSWORD_RESET = "password_reset"
+LOGIN_OTP = "login_otp"
 PASSWORD_MIN_LENGTH = 12
 PASSWORD_MAX_LENGTH = 128
 SESSION_COOKIE_PATH = "/"
@@ -114,6 +115,16 @@ def generate_otp():
 
 
 def issue_auth_token(user, purpose):
+    _, raw_token = _create_auth_token(user, purpose)
+    return raw_token
+
+
+def issue_login_otp(user, remember_me=False):
+    token, raw_token = _create_auth_token(user, LOGIN_OTP, remember_me)
+    return token.id, raw_token
+
+
+def _create_auth_token(user, purpose, remember_me=False):
     raw_token = generate_otp()
     now = utc_now()
     db.session.execute(
@@ -131,30 +142,40 @@ def issue_auth_token(user, purpose):
         purpose=purpose,
         token_hash=otp_digest(raw_token),
         expires_at=expires_at,
+        remember_me=remember_me,
     )
     db.session.add(token)
     db.session.flush()
-    return raw_token
+    return token, raw_token
 
 
-def find_valid_otp(email, code, purpose):
+def find_valid_otp(email, code, purpose, token_id=None):
     if not isinstance(code, str) or len(code) != 6 or not code.isdigit():
         return None, "invalid"
-    user = db.session.execute(
-        select(User).where(User.email == email)
-    ).scalar_one_or_none()
-    if user is None:
-        return None, "invalid"
-    token = db.session.execute(
-        select(AuthToken)
-        .where(
-            AuthToken.user_id == user.id,
-            AuthToken.purpose == purpose,
-            AuthToken.used_at.is_(None),
-        )
-        .order_by(AuthToken.created_at.desc())
-        .limit(1)
-    ).scalar_one_or_none()
+    if token_id is not None:
+        token = db.session.execute(
+            select(AuthToken).where(
+                AuthToken.id == token_id,
+                AuthToken.purpose == purpose,
+                AuthToken.used_at.is_(None),
+            )
+        ).scalar_one_or_none()
+    else:
+        user = db.session.execute(
+            select(User).where(User.email == email)
+        ).scalar_one_or_none()
+        if user is None:
+            return None, "invalid"
+        token = db.session.execute(
+            select(AuthToken)
+            .where(
+                AuthToken.user_id == user.id,
+                AuthToken.purpose == purpose,
+                AuthToken.used_at.is_(None),
+            )
+            .order_by(AuthToken.created_at.desc())
+            .limit(1)
+        ).scalar_one_or_none()
     if token is None:
         return None, "invalid"
     now = utc_now()

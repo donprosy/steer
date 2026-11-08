@@ -43,8 +43,7 @@ export function AuthProvider({ children }) {
     loading,
     initializationError,
     async login(email, password, rememberMe) {
-      const response = await authApi.login(email, password, rememberMe);
-      setUser(response.user);
+      return authApi.login(email, password, rememberMe);
     },
     acceptAuthenticatedUser,
     clearAuthenticatedUser() {

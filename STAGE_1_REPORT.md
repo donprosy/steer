@@ -2,7 +2,7 @@
 
 ## Outcome
 
-Stage 1 planning and project foundation are complete. The project is a standalone Don Prosy Business Manager workspace with a minimal runnable React/Vite frontend, a Flask health-check API, and documentation for the product, architecture, data model, API, security, and roadmap.
+Stage 1 planning and project foundation are complete. The project is a standalone STEER workspace with a minimal runnable React/Vite frontend, a Flask health-check API, and documentation for the product, architecture, data model, API, security, and roadmap.
 
 **Verification status: PASSED.** The dependency installs, production frontend build, frontend development page, Vite-to-Flask API proxy, Flask health route, and Git ignore rules were verified on the local Windows environment.
 
@@ -56,7 +56,7 @@ npm run dev
 - [x] Folder structure and required files checked.
 - [x] Frontend dependencies install; `npm run build` succeeds with Vite 8.3.6.
 - [x] Backend dependencies install in `backend/.venv`; Flask application imports and starts.
-- [x] `/api/v1/health` returns `{"service":"don-prosy-business-manager","status":"healthy"}` via both Flask and the Vite proxy.
+- [x] `/api/v1/health` returns `{"service":"don-prosy-business-manager","status":"healthy"}` via both Flask and the Vite proxy; the existing service identifier is retained for API compatibility.
 - [x] The configured local SQLite database connection opens successfully.
 - [x] Frontend Vite development server returns HTTP 200 with the placeholder page.
 - [x] The new project was empty at inspection; no existing Don Prosy AI files were accessed or modified.

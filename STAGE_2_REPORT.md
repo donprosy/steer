@@ -56,7 +56,7 @@ The interface uses the requested navy, blue, white, and slate palette through re
 - Responsive checks — exercised at desktop and 375px mobile viewport widths. Checked all primary routes for horizontal page overflow; no overflow was detected.
 - Browser console/page errors — none observed during the interaction checks.
 - Backend/API regression — Flask health endpoint and the Vite-proxied health endpoint returned the expected healthy JSON response. Backend files and Vite proxy configuration were not changed.
-- Project protection — work was confined to the Don Prosy Business Manager project; the separate Don Prosy AI project was not accessed or changed.
+- Project protection — work was confined to the STEER project; the separate Don Prosy AI project was not accessed or changed.
 
 ## Dependencies
 

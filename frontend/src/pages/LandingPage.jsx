@@ -12,7 +12,7 @@ const featureCards = [
 ];
 
 const faqs = [
-  ["What does Don Prosy Business Manager do?", "It brings everyday business records—customers, sales, expenses and inventory—into one clear workspace, with reporting designed to make performance easier to understand."],
+  ["What does STEER do?", "STEER brings everyday business records—customers, sales, expenses and inventory—into one clear workspace, with reporting designed to make performance easier to understand."],
   ["Who is it for?", "It is being designed for small business owners and entrepreneurs who want a practical view of how their business is doing."],
   ["How does the AI assistant work?", "The planned assistant will offer text-based help using business context you are authorised to access. AI features are not connected in this demonstration."],
   ["What subscription plans will be available?", "Starter, Growth and Business plans are planned. Pricing and final plan limits have not been set, so this preview intentionally uses placeholders."],
@@ -24,7 +24,7 @@ function DashboardPreview() {
   return (
     <div className="preview-frame">
       <div className="preview-top">
-        <div className="preview-brand"><span className="brand__mark">d</span><span>Prosy</span></div>
+        <div className="preview-brand"><span className="brand__mark">S</span><span>STEER</span></div>
         <span className="preview-chip"><i /> DEMO WORKSPACE</span>
         <span className="preview-avatar">JD</span>
       </div>
@@ -47,7 +47,7 @@ function DashboardPreview() {
               <defs><linearGradient id="preview-gradient" x1="0" x2="0" y1="0" y2="1"><stop stopColor="#3478f6" stopOpacity=".16" /><stop offset="1" stopColor="#3478f6" stopOpacity="0" /></linearGradient></defs>
             </svg>
           </div>
-          <div className="preview-ai"><span className="ai-orb"><Icon name="sparkles" size={17} /></span><small>PROSY AI INSIGHT</small><p>Revenue is trending up this month. Your top-selling products are driving the increase.</p><span>View business insights <Icon name="arrowRight" size={13} /></span></div>
+          <div className="preview-ai"><span className="ai-orb"><Icon name="sparkles" size={17} /></span><small>STEER AI INSIGHT · DEMO</small><p>Revenue is trending up this month. Your top-selling products are driving the increase.</p><span>View business insights <Icon name="arrowRight" size={13} /></span></div>
         </div>
         <div className="preview-footer"><span>Recent transactions</span><span>View all →</span></div>
       </div>
@@ -95,9 +95,9 @@ function LandingPage({ navigate }) {
         <section className="hero-section" id="home">
           <div className="hero-grid">
             <div className="hero-copy">
-              <div className="hero-kicker"><span className="kicker-icon"><Icon name="sparkles" size={14} /></span> CLARITY FOR EVERY KIND OF BUSINESS</div>
+              <div className="hero-kicker"><span className="kicker-icon"><Icon name="sparkles" size={14} /></span> AI-POWERED BUSINESS MANAGEMENT PLATFORM</div>
               <h1>Run your business<br />smarter. <span>Grow with<br className="hero-break" /> confidence.</span></h1>
-              <p className="hero-lede">The customers, sales, expenses and insights you need to move your business forward—all in one calm, clear workspace.</p>
+              <p className="hero-lede">Take Control. Move Your Business Forward. STEER brings the customers, sales, expenses and insights you need into one calm, clear workspace.</p>
               <div className="hero-actions">
                 <Button onClick={() => go("/register")}>Get started for free <Icon name="arrowRight" size={17} /></Button>
                 <a className="text-link" href="#features"><span className="play-icon">▶</span> Explore features</a>
@@ -207,12 +207,12 @@ function LandingPage({ navigate }) {
 
       <footer className="marketing-footer">
         <div className="footer-main">
-          <div className="footer-brand"><Brand light /><p>A clearer way to understand and run your business. Built for the people who make it happen.</p><span className="footer-socials"><a href="mailto:hello@donprosy.com" aria-label="Email us"><Icon name="message" size={17} /></a><a href="#home" aria-label="Back to top"><Icon name="arrowRight" size={17} /></a></span></div>
+          <div className="footer-brand"><Brand light /><p>Take Control. Move Your Business Forward.</p><span className="footer-socials"><a href="mailto:hello@donprosy.com" aria-label="Email us"><Icon name="message" size={17} /></a><a href="#home" aria-label="Back to top"><Icon name="arrowRight" size={17} /></a></span></div>
           <div className="footer-column"><b>PRODUCT</b><a href="#features">Features</a><a href="#how-it-works">How it works</a><a href="#pricing">Pricing</a><button onClick={() => go("/app/overview")}>Demo workspace</button></div>
-          <div className="footer-column"><b>COMPANY</b><a href="#about">About Don Prosy</a><a href="#faq">FAQs</a><a href="mailto:hello@donprosy.com">Contact</a></div>
+          <div className="footer-column"><b>COMPANY</b><a href="#about">About STEER</a><a href="#faq">FAQs</a><a href="mailto:hello@donprosy.com">Contact</a></div>
           <div className="footer-column"><b>RESOURCES</b><a href="#faq">Help & support</a><a href="#faq">Privacy policy</a><a href="#faq">Terms of service</a></div>
         </div>
-        <div className="footer-bottom"><span>© 2026 Don Prosy Business Manager. Built for the next chapter.</span><span><i /> Thoughtfully made for small business.</span></div>
+        <div className="footer-bottom"><span>© 2026 STEER. Take Control. Move Your Business Forward.</span><span><i /> Thoughtfully made for small business.</span></div>
       </footer>
     </div>
   );

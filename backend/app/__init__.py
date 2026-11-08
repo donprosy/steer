@@ -66,9 +66,10 @@ def create_app(test_config=None):
             or os.environ.get("MAIL_FROM")
         ),
         MAIL_SENDER_NAME=os.environ.get(
-            "MAIL_SENDER_NAME", "Don Prosy Business Manager"
+            "MAIL_SENDER_NAME", "STEER"
         ),
         MAIL_FROM=os.environ.get("MAIL_FROM"),
+        RESEND_API_KEY=os.environ.get("RESEND_API_KEY"),
         RATELIMIT_STORAGE_URI=os.environ.get("RATELIMIT_STORAGE_URI", "memory://"),
         RATELIMIT_ENABLED=app_environment != "testing",
     )
@@ -122,20 +123,23 @@ def _validate_security_configuration(app):
                 "Production rate limiting requires shared storage; configure "
                 "RATELIMIT_STORAGE_URI."
             )
-        if not app.config.get("MAIL_SERVER") or not (
+        if not app.config.get("RESEND_API_KEY") or not (
             app.config.get("MAIL_DEFAULT_SENDER") or app.config.get("MAIL_FROM")
         ):
             raise RuntimeError(
-                "Production email delivery requires MAIL_SERVER and MAIL_DEFAULT_SENDER."
+                "Production authentication email requires RESEND_API_KEY and MAIL_DEFAULT_SENDER."
             )
-        if app.config.get("MAIL_USE_TLS") == app.config.get("MAIL_USE_SSL"):
-            raise RuntimeError(
-                "Production SMTP must use exactly one secure transport: STARTTLS or implicit SSL."
-            )
-        if bool(app.config.get("MAIL_USERNAME")) != bool(app.config.get("MAIL_PASSWORD")):
-            raise RuntimeError(
-                "Configure both MAIL_USERNAME and MAIL_PASSWORD, or neither when SMTP authentication is not required."
-            )
+        if app.config.get("MAIL_SERVER"):
+            if app.config.get("MAIL_USE_TLS") == app.config.get("MAIL_USE_SSL"):
+                raise RuntimeError(
+                    "SMTP delivery must use TLS (STARTTLS) or implicit SSL, but not both."
+                )
+            if bool(app.config.get("MAIL_USERNAME")) != bool(
+                app.config.get("MAIL_PASSWORD")
+            ):
+                raise RuntimeError(
+                    "Configure both MAIL_USERNAME and MAIL_PASSWORD, or neither when SMTP authentication is not required."
+                )
         if not app.config.get("PUBLIC_APP_URL", "").startswith("https://"):
             raise RuntimeError("Production PUBLIC_APP_URL must use HTTPS.")
 

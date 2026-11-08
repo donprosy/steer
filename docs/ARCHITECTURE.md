@@ -1,4 +1,4 @@
-# Architecture — Don Prosy Business Manager
+# Architecture — STEER
 
 ## Principles
 
@@ -57,7 +57,7 @@ The Stage 1 entity design is documented in [DATABASE.md](DATABASE.md). No domain
 
 ## Authentication and authorization
 
-Stage 3 implements verified identities, Argon2id password hashing, revocable server-side sessions, one-time verification/reset tokens, CSRF protection, and server-enforced membership-role checks. Authentication uses a random opaque `HttpOnly` cookie; only its SHA-256 digest is stored. The React client obtains a CSRF token from the API and sends it in `X-CSRFToken` on mutations. Production cookies are `Secure`, `SameSite=Lax`, and use the `__Host-` prefix. A business context must be resolved from the authenticated user's active membership, not trusted from a client-supplied business ID alone. No bearer token or browser local-storage credential is used.
+Stage 3 implements verified identities, Argon2id password hashing, password-plus-OTP login, revocable server-side sessions, one-time verification/reset tokens, CSRF protection, and server-enforced membership-role checks. Authentication OTPs are sent through the Resend service adapter; only keyed hashes of OTPs are stored. Authentication uses a random opaque `HttpOnly` cookie; only its SHA-256 digest is stored. The React client obtains a CSRF token from the API and sends it in `X-CSRFToken` on mutations. Production cookies are `Secure`, `SameSite=Lax`, and use the `__Host-` prefix. A business context must be resolved from the authenticated user's active membership, not trusted from a client-supplied business ID alone. No bearer token or browser local-storage credential is used.
 
 ## Subscription architecture
 

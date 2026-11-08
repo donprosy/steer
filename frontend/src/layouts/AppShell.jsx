@@ -109,7 +109,7 @@ function AppShell({ activePage, navigate, user, onLogout, children }) {
         <main className="dashboard-content">
           <DemoNotice />
           {children}
-          <footer className="app-footer"><span>© 2026 Don Prosy Business Manager</span><span><Icon name="shield" size={14} /> Demonstration workspace · sample figures only</span></footer>
+          <footer className="app-footer"><span>© 2026 STEER</span><span><Icon name="shield" size={14} /> Demonstration workspace · sample figures only</span></footer>
         </main>
       </div>
     </div>

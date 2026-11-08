@@ -80,6 +80,16 @@ export const authApi = {
       method: "POST",
       body: { email, password, remember_me: rememberMe },
     }),
+  resendLoginOtp: (challengeId) =>
+    request("/otp/resend", {
+      method: "POST",
+      body: { challenge_id: challengeId },
+    }),
+  verifyLoginOtp: (challengeId, code) =>
+    request("/otp/verify", {
+      method: "POST",
+      body: { challenge_id: challengeId, code },
+    }),
   register: (name, email, password, businessName, confirmPassword) =>
     request("/register", {
       method: "POST",

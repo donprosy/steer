@@ -10,7 +10,7 @@ const copy = {
     title: "Good to see you.",
     intro: "Sign in to pick up where you left off.",
     action: "Sign in",
-    switchText: "New to Don Prosy?",
+    switchText: "New to STEER?",
     switchAction: "Create an account",
     switchRoute: "/register",
   },
@@ -54,6 +54,7 @@ function AuthPage({ mode, navigate }) {
   const [stage, setStage] = useState("form");
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
+  const [loginChallengeId, setLoginChallengeId] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [resetPassword, setResetPassword] = useState("");
@@ -97,9 +98,20 @@ function AuthPage({ mode, navigate }) {
         acceptAuthenticatedUser(response.user);
         navigate("/app/overview");
       } catch (requestError) {
-        if (mode === "login" && requestError.code === "email_not_verified") {
-          setCanResendVerification(true);
-        }
+        showRequestError(requestError);
+      } finally {
+        setSubmitting(false);
+      }
+      return;
+    }
+
+    if (mode === "login" && stage === "login-otp") {
+      setSubmitting(true);
+      try {
+        const response = await authApi.verifyLoginOtp(loginChallengeId, code);
+        acceptAuthenticatedUser(response.user);
+        navigate("/app/overview");
+      } catch (requestError) {
         showRequestError(requestError);
       } finally {
         setSubmitting(false);
@@ -129,12 +141,17 @@ function AuthPage({ mode, navigate }) {
     setSubmitting(true);
     try {
       if (mode === "login") {
-        await login(
+        const response = await login(
           form.elements.email.value,
           form.elements.password.value,
           form.elements.remember_me.checked,
         );
-        navigate("/app/overview");
+        setEmail(response.email || form.elements.email.value.trim());
+        setLoginChallengeId(response.challenge_id);
+        setCode("");
+        setStage("login-otp");
+        setMessage(response.message);
+        startCooldown();
         return;
       }
 
@@ -163,6 +180,9 @@ function AuthPage({ mode, navigate }) {
         startCooldown();
       }
     } catch (requestError) {
+      if (mode === "login" && requestError.code === "email_not_verified") {
+        setCanResendVerification(true);
+      }
       showRequestError(requestError);
     } finally {
       setSubmitting(false);
@@ -199,14 +219,32 @@ function AuthPage({ mode, navigate }) {
     }
   }
 
+  async function resendLoginCode() {
+    setError("");
+    setMessage("");
+    try {
+      const response = await authApi.resendLoginOtp(loginChallengeId);
+      if (response.challenge_id) setLoginChallengeId(response.challenge_id);
+      setMessage(response.message);
+      startCooldown();
+    } catch (requestError) {
+      showRequestError(requestError);
+    }
+  }
+
   const verificationStage = mode === "register" && stage === "verify";
   const recoveryStage = mode === "forgot-password" && stage === "reset";
-  const title = verificationStage
+  const loginOtpStage = mode === "login" && stage === "login-otp";
+  const title = loginOtpStage
+    ? "Check your email."
+    : verificationStage
     ? "Check your email."
     : recoveryStage
       ? "Reset your password."
       : content.title;
-  const intro = verificationStage
+  const intro = loginOtpStage
+    ? `Enter the 6-digit sign-in code sent to ${email}. It expires in 10 minutes.`
+    : verificationStage
     ? `Enter the 6-digit code sent to ${email}. It expires in 10 minutes.`
     : recoveryStage
       ? `Enter the 6-digit code sent to ${email}, then choose a new password.`
@@ -229,14 +267,14 @@ function AuthPage({ mode, navigate }) {
       <div className="auth-main">
         <button className="auth-back" onClick={() => navigate("/")}><Icon name="arrowLeft" size={17} /> Back to home</button>
         <div className="auth-card">
-          <span className="auth-kicker">{verificationStage ? "EMAIL VERIFICATION" : recoveryStage ? "ACCOUNT RECOVERY" : content.eyebrow}</span>
+          <span className="auth-kicker">{loginOtpStage ? "TWO-STEP VERIFICATION" : verificationStage ? "EMAIL VERIFICATION" : recoveryStage ? "ACCOUNT RECOVERY" : content.eyebrow}</span>
           <h1>{title}</h1>
           <p className="auth-intro">{intro}</p>
           <form onSubmit={submit} className="auth-form">
             {mode === "register" && stage === "form" && <label>Full name<input name="name" type="text" placeholder="e.g. Jamie Daniels" autoComplete="name" maxLength={120} required /></label>}
             {mode === "register" && stage === "form" && <label>Business name<input name="business_name" type="text" placeholder="Your business" autoComplete="organization" maxLength={160} required /></label>}
             {stage === "form" && <label>Email address<input ref={emailInput} name="email" type="email" placeholder="you@yourbusiness.com" autoComplete="email" maxLength={254} required /></label>}
-            {mode === "login" && <div className="auth-password-field">
+            {mode === "login" && stage === "form" && <div className="auth-password-field">
               <span className="auth-field-label">Password</span>
               <span className="password-field"><input aria-label="Password" name="password" type={showPassword ? "text" : "password"} placeholder="Enter your password" autoComplete="current-password" maxLength={128} required /><button type="button" className="password-toggle" aria-label={showPassword ? "Hide password" : "Show password"} onClick={() => setShowPassword(!showPassword)}><Icon name={showPassword ? "eyeOff" : "eye"} size={18} /></button></span>
             </div>}
@@ -258,21 +296,22 @@ function AuthPage({ mode, navigate }) {
             </>}
             {recoveryStage && <label>Confirm new password<input name="confirm_password" type="password" placeholder="Re-enter your new password" autoComplete="new-password" minLength={12} maxLength={128} required /></label>}
             {verificationStage && <label>6-digit verification code<input className="otp-input" name="code" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength={6} value={code} onChange={(event) => setCode(event.target.value.replace(/\D/g, "").slice(0, 6))} required /></label>}
-            {mode === "login" && <div className="form-meta"><label className="checkbox-label"><input name="remember_me" type="checkbox" /> Remember me</label><button type="button" className="inline-link" onClick={() => navigate("/forgot-password")}>Forgot password?</button></div>}
+            {loginOtpStage && <label>6-digit sign-in code<input className="otp-input" name="code" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength={6} value={code} onChange={(event) => setCode(event.target.value.replace(/\D/g, "").slice(0, 6))} required /></label>}
+            {mode === "login" && stage === "form" && <div className="form-meta"><label className="checkbox-label"><input name="remember_me" type="checkbox" /> Remember me</label><button type="button" className="inline-link" onClick={() => navigate("/forgot-password")}>Forgot password?</button></div>}
             {initializationError && <p className="form-feedback form-feedback--error" role="alert">{initializationError}</p>}
             {error && <p className="form-feedback form-feedback--error" role="alert">{error}</p>}
             {message && <p className="form-feedback form-feedback--success" role="status">{message}</p>}
-            <Button type="submit" className="auth-submit" disabled={submitting}>{submitting ? "Please wait…" : verificationStage ? "Verify email" : recoveryStage ? "Reset password" : content.action}<Icon name="arrowRight" size={16} /></Button>
+            <Button type="submit" className="auth-submit" disabled={submitting}>{submitting ? "Please wait…" : loginOtpStage ? "Verify and sign in" : verificationStage ? "Verify email" : recoveryStage ? "Reset password" : content.action}<Icon name="arrowRight" size={16} /></Button>
           </form>
-          {(verificationStage || recoveryStage || (mode === "login" && canResendVerification)) && <p className="auth-switch">
+          {(loginOtpStage || verificationStage || recoveryStage || (mode === "login" && canResendVerification)) && <p className="auth-switch">
             {resendSeconds > 0
               ? `You can request another code in ${resendSeconds}s`
-              : <button onClick={recoveryStage ? resendPasswordCode : resendVerification}>{recoveryStage ? "Resend reset code" : "Resend verification code"}</button>}
+              : <button onClick={loginOtpStage ? resendLoginCode : recoveryStage ? resendPasswordCode : resendVerification}>{loginOtpStage ? "Resend sign-in code" : recoveryStage ? "Resend reset code" : "Resend verification code"}</button>}
           </p>}
           <p className="auth-switch">{content.switchText} <button onClick={() => navigate(content.switchRoute)}>{content.switchAction}</button></p>
           <p className="auth-legal">By continuing, you agree to our <a href="/#faq" onClick={(event) => { event.preventDefault(); navigate("/"); }}>Terms</a> and <a href="/#faq" onClick={(event) => { event.preventDefault(); navigate("/"); }}>Privacy Policy</a>.</p>
         </div>
-        <span className="auth-copyright">© 2026 Don Prosy Business Manager</span>
+        <span className="auth-copyright">© 2026 STEER</span>
       </div>
     </main>
   );

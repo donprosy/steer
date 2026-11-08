@@ -118,7 +118,7 @@ function AccountActionPage({ mode, navigate }) {
           </p>}
           <p className="auth-switch">Ready to continue? <button onClick={() => navigate("/login")}>Sign in</button></p>
         </div>
-        <span className="auth-copyright">© 2026 Don Prosy Business Manager</span>
+        <span className="auth-copyright">© 2026 STEER</span>
       </div>
     </main>
   );

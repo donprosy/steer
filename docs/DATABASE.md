@@ -10,7 +10,7 @@ PostgreSQL is the planned production database; SQLAlchemy is the persistence lay
 | `businesses` | Tenant/workspace and business profile | **Minimal schema implemented** for registration; one owner at creation; multi-business membership is supported by the relationship. |
 | `business_memberships` | User-to-business membership and role | **Implemented.** Join table; unique `(business_id, user_id)`; role and membership state. |
 | `auth_sessions` | Revocable browser sessions | **Implemented.** Stores only a SHA-256 digest of a random cookie token, expiry, last-seen and revocation timestamps, and remember-me state. |
-| `auth_tokens` | Email verification and password-reset OTPs | **Implemented.** Stores only a keyed HMAC digest of a random 6-digit code, purpose, expiry, incorrect-attempt count, and use timestamp. |
+| `auth_tokens` | Login, email-verification, and password-reset OTPs | **Implemented.** Stores only a keyed HMAC digest of a random 6-digit code, purpose, expiry, incorrect-attempt count, use timestamp, and the login challenge's remember-me choice. |
 | `customers` | Customer/contact records | Belongs to one business; optional relationship to a user is not required. |
 | `products` | Product/service catalogue | Belongs to one business; SKU uniqueness should be scoped to business if used. |
 | `inventory_items` | Current stock or stock configuration | Belongs to a product/business; quantity and reorder threshold; enforce non-negative rules where appropriate. |
