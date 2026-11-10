@@ -540,6 +540,32 @@ def test_login_rejects_wrong_password_and_supports_session_cookie(
         assert session.remember_me is True
 
 
+def test_login_can_start_new_challenge_after_successful_otp(
+    client, csrf_headers, sent_account_emails
+):
+    verification_code = create_verified_account(client, csrf_headers, sent_account_emails)
+    assert verify_account(
+        client, csrf_headers, "owner@example.com", verification_code
+    ).status_code == 200
+
+    for _ in range(2):
+        started = client.post(
+            f"{AUTH_URL}/login",
+            headers=csrf_headers,
+            json={"email": "owner@example.com", "password": PASSWORD},
+        )
+        assert started.status_code == 202
+        challenge_id = started.get_json()["challenge_id"]
+        _, purpose, code = sent_account_emails.pop()
+        assert purpose == LOGIN_OTP
+        completed = client.post(
+            f"{AUTH_URL}/otp/verify",
+            headers=csrf_headers,
+            json={"challenge_id": challenge_id, "code": code},
+        )
+        assert completed.status_code == 200
+
+
 def test_login_otp_attempts_and_resend_rotate_the_challenge(
     app, client, csrf_headers, sent_account_emails
 ):

@@ -283,28 +283,29 @@ def login():
             .where(
                 AuthToken.user_id == user.id,
                 AuthToken.purpose == LOGIN_OTP,
-                AuthToken.used_at.is_(None),
             )
             .order_by(AuthToken.created_at.desc())
             .limit(1)
         ).scalar_one_or_none()
         if (
             active_token is not None
+            and active_token.used_at is None
             and normalized_datetime(active_token.expires_at) > utc_now()
             and active_token.attempts < current_app.config["AUTH_OTP_MAX_ATTEMPTS"]
         ):
             active_token.remember_me = remember_me
             db.session.commit()
             return _login_otp_response(active_token.id, user.email)
-        return jsonify(
-            {
-                "error": {
-                    "code": "otp_cooldown",
-                    "message": "Please wait before requesting another sign-in code.",
-                    "retry_after": remaining,
+        if active_token is not None and active_token.used_at is None:
+            return jsonify(
+                {
+                    "error": {
+                        "code": "otp_cooldown",
+                        "message": "Please wait before requesting another sign-in code.",
+                        "retry_after": remaining,
+                    }
                 }
-            }
-        ), 429
+            ), 429
 
     try:
         challenge_id, code = issue_login_otp(user, remember_me)
