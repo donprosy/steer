@@ -14,7 +14,14 @@ function currentPath() {
 
 function AppContent() {
   const [path, setPath] = useState(currentPath);
+  const [selectedBusinessId, setSelectedBusinessId] = useState(null);
   const { user, loading, logout } = useAuth();
+
+  useEffect(() => {
+    if (user?.businesses?.length) {
+      setSelectedBusinessId((current) => current || user.businesses[0].business_id);
+    }
+  }, [user]);
 
   useEffect(() => {
     const handlePopState = () => setPath(currentPath());
@@ -62,9 +69,22 @@ function AppContent() {
       );
     }
     const page = path.split("/")[2] || "overview";
+    const businessId = selectedBusinessId || user.businesses?.[0]?.business_id;
     return (
-      <AppShell activePage={page} navigate={navigate} user={user} onLogout={logout}>
-        <DashboardPage page={page} navigate={navigate} />
+      <AppShell
+        activePage={page}
+        navigate={navigate}
+        user={user}
+        onLogout={logout}
+        activeBusinessId={businessId}
+        onBusinessChange={setSelectedBusinessId}
+      >
+        <DashboardPage
+          page={page}
+          navigate={navigate}
+          businessId={businessId}
+          businessRole={user.businesses?.find((item) => item.business_id === businessId)?.role || user.businesses?.[0]?.role}
+        />
       </AppShell>
     );
   }

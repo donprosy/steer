@@ -23,7 +23,7 @@ Each stage should be reviewed and accepted before moving into the next. Scope is
 - Establish production configuration checks, migration workflow, security headers, CSRF policy, and auth abuse limits — implemented; production SMTP, strong secret, TLS, and shared rate-limit storage still require environment provisioning.
 - Exit: automated tests verify account lifecycle, CSRF/session controls, and membership denial. Before launch, complete a security review and configure production services.
 
-## 4. Business management system
+## 4. Business management system — in progress
 
 - Implement business profiles, customers, products, stock movements, sales, expenses, and core dashboard/report calculations.
 - Add transactional integrity, database migrations, search/pagination, import/export policy, and currency/financial definitions.

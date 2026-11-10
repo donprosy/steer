@@ -262,9 +262,10 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .auth-form > label, .modal-form > label, .settings-form > label { display: grid; gap: 7px; color: #38465b; font-size: 10px; font-weight: 700; }
 .auth-password-field { display: grid; gap: 7px; color: #38465b; font-size: 10px; font-weight: 700; }
 .auth-field-label { display: block; }
-.auth-form input, .modal-form input, .modal-form select, .settings-form input, .settings-form select { width: 100%; min-height: 43px; padding: 0 12px; border: 1px solid #dfe5ed; border-radius: 8px; background: white; color: #1e293b; font-size: 11px; font-weight: 500; transition: border-color .15s ease, box-shadow .15s ease; }
+.auth-form input, .modal-form input, .modal-form select, .modal-form textarea, .settings-form input, .settings-form select { width: 100%; min-height: 43px; padding: 0 12px; border: 1px solid #dfe5ed; border-radius: 8px; background: white; color: #1e293b; font-size: 11px; font-weight: 500; transition: border-color .15s ease, box-shadow .15s ease; }
+.modal-form textarea { min-height: 78px; padding: 10px 12px; resize: vertical; }
 .auth-form input::placeholder, .modal-form input::placeholder { color: #a4adba; }
-.auth-form input:focus, .modal-form input:focus, .modal-form select:focus, .settings-form input:focus, .settings-form select:focus { border-color: #7ca0e5; outline: none; box-shadow: 0 0 0 3px rgba(37,99,235,.1); }
+.auth-form input:focus, .modal-form input:focus, .modal-form select:focus, .modal-form textarea:focus, .settings-form input:focus, .settings-form select:focus { border-color: #7ca0e5; outline: none; box-shadow: 0 0 0 3px rgba(37,99,235,.1); }
 .password-field { position: relative; }
 .password-field input { padding-right: 43px; }
 .otp-input { font-size: 20px !important; font-weight: 800 !important; letter-spacing: .45em; text-align: center; }
@@ -590,7 +591,7 @@ td > b:first-child { font-weight: 700; }
 .modal-intro { margin: 7px 0 17px; color: #7e8a9b; font-size: 9px; line-height: 1.65; }
 .modal-form { display: grid; gap: 13px; }
 .modal-form > label { font-size: 9px; }
-.modal-form input, .modal-form select { min-height: 38px; font-size: 9px; }
+.modal-form input, .modal-form select, .modal-form textarea { min-height: 38px; font-size: 9px; }
 .field-optional { color: #98a2af; font-size: 8px; font-weight: 500; }
 .detail-list { display: grid; grid-template-columns: 1fr 1fr; gap: 0 16px; margin: 15px 0; border-top: 1px solid #eef1f5; }
 .detail-list > div { display: grid; gap: 5px; padding: 11px 0; border-bottom: 1px solid #eef1f5; }

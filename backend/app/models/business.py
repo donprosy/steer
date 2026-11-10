@@ -24,4 +24,17 @@ class Business(db.Model):
     memberships = db.relationship(
         "BusinessMembership", back_populates="business", cascade="all, delete-orphan"
     )
-
+    customers = db.relationship(
+        "Customer", back_populates="business", cascade="all, delete-orphan"
+    )
+    products = db.relationship(
+        "Product", back_populates="business", cascade="all, delete-orphan"
+    )
+    inventory_movements = db.relationship(
+        "InventoryMovement",
+        back_populates="business",
+        cascade="all, delete-orphan",
+    )
+    sales = db.relationship("Sale", back_populates="business", cascade="all, delete-orphan")
+    payments = db.relationship("Payment", back_populates="business", cascade="all, delete-orphan")
+    expenses = db.relationship("Expense", back_populates="business", cascade="all, delete-orphan")

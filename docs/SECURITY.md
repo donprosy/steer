@@ -18,11 +18,11 @@ Enforce TLS in production. Never use Flask's development server in production. S
 
 ## Authorization and business data isolation
 
-- **Implemented foundation:** `require_auth` and `require_business_role` enforce active identity, membership, business status, and allowed role on protected routes. The initial registration creates an owner membership. Future business-resource routes must use these checks and scope every query by the authorized business.
+- **Implemented foundation:** `require_auth` and `require_business_role` enforce active identity, membership, business status, and allowed role on protected routes. The initial registration creates an owner membership. Stage 4 customer routes use these checks and scope customer reads and mutations by the authorized business; the same controls and cross-tenant tests are required for every subsequent resource family.
 - Resolve active business membership from authenticated server-side identity; a business ID in a URL/body is only a lookup key, never proof of permission.
 - Scope every tenant-owned read, update, delete, export, report, AI context query, and background task to the authorised business.
 - Use deny-by-default permissions and check both membership status and required role.
-- Add tests that attempt cross-business ID substitution for every resource family.
+- Customer API tests reject cross-business and cross-record ID substitution. Add equivalent tests for every subsequent resource family.
 - Apply database foreign keys and, where useful, composite constraints to prevent relationships across businesses.
 - Audit privileged changes and administrator access; minimize support access and require an explicit operational reason.
 

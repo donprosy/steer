@@ -1,6 +1,6 @@
 # REST API Plan
 
-Implemented and planned endpoints use the `/api/v1` prefix and JSON request/response bodies unless a future file-upload flow is explicitly documented. Stage 3 implements health and authentication/account endpoints; business-management endpoints remain planned. Authentication, validation, business-scope authorization, pagination, and consistent error responses are required before other endpoint groups are exposed.
+Implemented and planned endpoints use the `/api/v1` prefix and JSON request/response bodies unless a future file-upload flow is explicitly documented. Stage 3 implements health and authentication/account endpoints; Stage 4 adds customer management. Other business-management endpoints remain planned. Authentication, validation, business-scope authorization, pagination, and consistent error responses are required before other endpoint groups are exposed.
 
 ## Conventions
 
@@ -19,9 +19,23 @@ Implemented and planned endpoints use the `/api/v1` prefix and JSON request/resp
 
 The existing `service` response identifier (`don-prosy-business-manager`) is retained for API compatibility; it is a technical identifier, not the public product name.
 
-## Planned endpoint groups
+## Implemented endpoint groups
 
-### Authentication
+## Customer management (Stage 4)
+
+All customer endpoints require a valid authenticated session and CSRF token for mutations. The business ID is only a resource lookup key: the server verifies an active membership before serving any customer resource. Inaccessible businesses and customers return the same `404` response to avoid confirming their existence.
+
+| Method | Path | Purpose |
+|---|---|---|
+| `GET` | `/api/v1/businesses/{business_id}/customers?page=1&per_page=25&q=` | Search and list customers for the authorized business. |
+| `POST` | `/api/v1/businesses/{business_id}/customers` | Create a customer. Requires `full_name` and `phone`; `email`, `address`, and `notes` are optional. |
+| `GET` | `/api/v1/businesses/{business_id}/customers/{customer_id}` | Retrieve a customer profile. |
+| `PATCH` | `/api/v1/businesses/{business_id}/customers/{customer_id}` | Update explicitly supported customer fields. |
+| `DELETE` | `/api/v1/businesses/{business_id}/customers/{customer_id}` | Delete a customer; restricted to owners and managers. |
+
+List responses contain `customers` and `pagination` (`page`, `per_page`, `total`, `pages`). Customer mutations return a serialized `customer` object. Validation errors use the API's standard `{ "error": { "code": "...", "message": "..." } }` response shape. Purchase history and outstanding balances will be exposed only after sales and payment records are implemented.
+
+## Authentication
 
 | Method and path | Responsibility |
 |---|---|
@@ -52,6 +66,8 @@ Mutating endpoints are CSRF-protected. The frontend fetches `/api/v1/auth/csrf` 
 
 Unverified accounts cannot sign in. Successful login OTP verification creates an authenticated session. Email-dependent OTP operations return `503` when Resend is not configured or delivery fails. Set `RESEND_API_KEY` and `MAIL_FROM` to a sender address verified with Resend. Non-OTP account notifications continue to use optional SMTP settings.
 
+## Planned endpoint groups
+
 ### Businesses
 
 | Method and path | Responsibility |
@@ -60,16 +76,6 @@ Unverified accounts cannot sign in. Successful login OTP verification creates an
 | `POST /api/v1/businesses` | Create a business and initial owner membership. |
 | `GET /api/v1/businesses/{business_id}` | Read an authorised business profile. |
 | `PATCH /api/v1/businesses/{business_id}` | Update permitted business settings. |
-
-### Customers
-
-| Method and path | Responsibility |
-|---|---|
-| `GET /api/v1/businesses/{business_id}/customers` | Paginated, scoped customer search/list. |
-| `POST /api/v1/businesses/{business_id}/customers` | Create a customer. |
-| `GET /api/v1/businesses/{business_id}/customers/{customer_id}` | Read one customer and authorised summary. |
-| `PATCH /api/v1/businesses/{business_id}/customers/{customer_id}` | Update customer details. |
-| `DELETE /api/v1/businesses/{business_id}/customers/{customer_id}` | Archive or delete according to retention rules. |
 
 ### Products
 

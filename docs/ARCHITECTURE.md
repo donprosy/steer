@@ -32,9 +32,9 @@ Production hosting should route the frontend and API through HTTPS, ideally unde
 ## Repository boundaries
 
 - `frontend/`: React pages, reusable components, layouts, hooks, API clients, assets, and styles.
-- `backend/app/routes/`: HTTP parsing, request validation, response serialization, and route-level authorization.
-- `backend/app/services/`: business operations and external provider adapters.
-- `backend/app/models/`: SQLAlchemy identity, business membership, session, and token entities; domain entities are added with later stages.
+- `backend/app/routes/`: HTTP parsing, request validation, response serialization, and route-level authorization, including tenant-scoped customer endpoints.
+- `backend/app/services/`: authentication and customer operations, business rules, and external provider adapters.
+- `backend/app/models/`: SQLAlchemy identity, business membership, session, token, and initial customer entities; remaining domain entities are added incrementally.
 - `backend/migrations/`: Alembic/Flask-Migrate schema history.
 - `backend/run.py`: local development entry point; application creation is isolated in `create_app`.
 - `docs/`: requirements, API, security, and data design.
@@ -51,7 +51,7 @@ Use a `/api/v1` prefix and group endpoints by domain. Route modules remain thin:
 
 ## Database architecture
 
-Use SQLAlchemy with PostgreSQL as the production relational database and SQLite for local development and tests that do not depend on PostgreSQL-specific behavior. Stage 3 adds the identity, business, membership, session, and one-time-token schema through Flask-Migrate/Alembic. Every future tenant-owned entity must carry a business relationship, and service queries must include the authorised business scope. Never rely on automatic production table creation.
+Use SQLAlchemy with PostgreSQL as the production relational database and SQLite for local development and tests that do not depend on PostgreSQL-specific behavior. Stage 3 adds the identity, business, membership, session, and one-time-token schema through Flask-Migrate/Alembic. Stage 4 adds the initial customer table through a forward-only migration. Every tenant-owned entity must carry a business relationship, and service queries must include the authorised business scope. Never rely on automatic production table creation.
 
 The Stage 1 entity design is documented in [DATABASE.md](DATABASE.md). No domain tables are implemented yet.
 

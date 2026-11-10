@@ -36,7 +36,7 @@ function getInitials(name = "") {
   return name.trim().split(/\s+/).slice(0, 2).map((part) => part[0]).join("").toUpperCase() || "U";
 }
 
-function AppShell({ activePage, navigate, user, onLogout, children }) {
+function AppShell({ activePage, navigate, user, onLogout, activeBusinessId, onBusinessChange, children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const [search, setSearch] = useState("");
@@ -45,9 +45,12 @@ function AppShell({ activePage, navigate, user, onLogout, children }) {
   const [sidebarProfileOpen, setSidebarProfileOpen] = useState(false);
   const [logoutError, setLogoutError] = useState("");
   const pageTitle = routeTitles[activePage] || "Overview";
-  const businessName = user.businesses?.[0]?.business_name || "Business account";
+  const businesses = user.businesses || [];
+  const selectedBusiness = businesses.find((item) => item.business_id === activeBusinessId) || businesses[0] || {};
+  const businessName = selectedBusiness.business_name || "Business account";
   const userInitials = getInitials(user.name);
-  const userRole = user.businesses?.[0]?.role === "owner" ? "Business owner" : "Team member";
+  const userRole = selectedBusiness.role === "owner" ? "Business owner" : "Team member";
+  const isLivePage = activePage === "customers";
   const searchResults = navigation.flatMap((group) => group.items)
     .filter((item) => item[1].toLowerCase().includes(search.trim().toLowerCase()));
 
@@ -72,9 +75,24 @@ function AppShell({ activePage, navigate, user, onLogout, children }) {
       {sidebarOpen && <button className="sidebar-backdrop" aria-label="Close navigation" onClick={() => setSidebarOpen(false)} />}
       <aside className={`sidebar${sidebarOpen ? " sidebar--open" : ""}`}>
         <div className="sidebar__brand"><button aria-label="Go to overview" onClick={() => go("overview")}><Brand light /></button><button className="sidebar-collapse" aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"} aria-expanded={!collapsed} onClick={() => setCollapsed(!collapsed)}><Icon name="menu" size={18} /></button></div>
-        <button className="business-switcher" onClick={() => go("settings")} title="Open business settings">
-          <span className="business-switcher__mark">{businessName[0]?.toUpperCase() || "B"}</span><span className="business-switcher__text"><b>{businessName}</b><small>Demo workspace</small></span><Icon name="arrowDown" size={15} />
-        </button>
+        <label className="business-switcher" title="Switch business workspace">
+          <span className="business-switcher__mark">{businessName[0]?.toUpperCase() || "B"}</span>
+          <span className="business-switcher__text">
+            <b>{businessName}</b>
+            <small>Business workspace</small>
+          </span>
+          <select
+            aria-label="Switch business"
+            value={selectedBusiness.business_id || ""}
+            onChange={(event) => onBusinessChange?.(event.target.value)}
+            className="business-switcher__select"
+          >
+            {businesses.map((business) => (
+              <option key={business.business_id} value={business.business_id}>{business.business_name}</option>
+            ))}
+          </select>
+          <Icon name="arrowDown" size={15} />
+        </label>
         <nav className="side-nav" aria-label="Workspace navigation">
           {navigation.map((group) => <div className="side-nav__group" key={group.section}>
             <span className="side-nav__label">{group.section}</span>
@@ -107,9 +125,9 @@ function AppShell({ activePage, navigate, user, onLogout, children }) {
           </div>
         </header>
         <main className="dashboard-content">
-          <DemoNotice />
+          {!isLivePage && <DemoNotice />}
           {children}
-          <footer className="app-footer"><span>© 2026 STEER</span><span><Icon name="shield" size={14} /> Demonstration workspace · sample figures only</span></footer>
+          <footer className="app-footer"><span>© 2026 STEER</span><span><Icon name="shield" size={14} />{isLivePage ? " Customer records are live; other modules remain in preview." : " Demonstration workspace · sample figures only"}</span></footer>
         </main>
       </div>
     </div>

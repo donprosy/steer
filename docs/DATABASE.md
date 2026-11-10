@@ -1,6 +1,6 @@
 # Database Design Plan
 
-PostgreSQL is the planned production database; SQLAlchemy is the persistence layer. SQLite is used for local development and authentication tests. Stage 3 implements the account, business-membership, session, and one-time-token tables listed below; customer and business-operations tables remain planned. Names and fields are provisional and must be refined with validated product workflows.
+PostgreSQL is the planned production database; SQLAlchemy is the persistence layer. SQLite is used for local development and authentication tests. Stage 3 implements the account, business-membership, session, and one-time-token tables listed below. Stage 4 adds domain tables incrementally through forward-only migrations; names and fields should be refined with validated product workflows.
 
 ## Core entities
 
@@ -11,7 +11,7 @@ PostgreSQL is the planned production database; SQLAlchemy is the persistence lay
 | `business_memberships` | User-to-business membership and role | **Implemented.** Join table; unique `(business_id, user_id)`; role and membership state. |
 | `auth_sessions` | Revocable browser sessions | **Implemented.** Stores only a SHA-256 digest of a random cookie token, expiry, last-seen and revocation timestamps, and remember-me state. |
 | `auth_tokens` | Login, email-verification, and password-reset OTPs | **Implemented.** Stores only a keyed HMAC digest of a random 6-digit code, purpose, expiry, incorrect-attempt count, use timestamp, and the login challenge's remember-me choice. |
-| `customers` | Customer/contact records | Belongs to one business; optional relationship to a user is not required. |
+| `customers` | Customer/contact records | **Initial schema implemented.** Belongs to one business; optional relationship to a user is not required. Purchase history and balances depend on sales/payment records. |
 | `products` | Product/service catalogue | Belongs to one business; SKU uniqueness should be scoped to business if used. |
 | `inventory_items` | Current stock or stock configuration | Belongs to a product/business; quantity and reorder threshold; enforce non-negative rules where appropriate. |
 | `inventory_movements` | Auditable stock changes | Belongs to a business and product; records signed quantity, reason, timestamp, and actor; supports reconciliation of current stock. |
@@ -44,6 +44,7 @@ users 1---* ai_usage_records (optional actor)
 ## Data integrity and tenancy
 
 - Stage 3's initial schema is defined in `backend/app/models/` and created with the versioned migration in `backend/migrations/versions/`. Apply it with `flask --app run db upgrade`; do not use `create_all()` against deployed data.
+- Stage 4 migration revisions must follow the current Alembic head and must be reviewed/applied through the existing development and deployment process. This work does not run schema upgrades against production; the instructor handoff and review gate are in `STAGE_4_REPORT.md`.
 - Use primary keys that are not guessable identifiers where practical, plus database foreign keys.
 - Every tenant-owned row must have a business scope or an unambiguous path to one.
 - Queries and updates must constrain by the authenticated, authorised business; never rely on the client to provide a trusted tenant ID.
