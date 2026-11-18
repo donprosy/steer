@@ -32,9 +32,9 @@ Production hosting should route the frontend and API through HTTPS, ideally unde
 ## Repository boundaries
 
 - `frontend/`: React pages, reusable components, layouts, hooks, API clients, assets, and styles.
-- `backend/app/routes/`: HTTP parsing, request validation, response serialization, and route-level authorization, including tenant-scoped customer endpoints.
-- `backend/app/services/`: authentication and customer operations, business rules, and external provider adapters.
-- `backend/app/models/`: SQLAlchemy identity, business membership, session, token, and initial customer entities; remaining domain entities are added incrementally.
+- `backend/app/routes/`: HTTP parsing, request validation, response serialization, and route-level authorization for business profiles, customers, products/inventory, sales, expenses, and reports.
+- `backend/app/services/`: authentication, tenant-scoped domain operations, financial calculations, and external provider adapters.
+- `backend/app/models/`: SQLAlchemy identity, membership, business profile, customer, product, inventory movement, sales, payment, and expense entities.
 - `backend/migrations/`: Alembic/Flask-Migrate schema history.
 - `backend/run.py`: local development entry point; application creation is isolated in `create_app`.
 - `docs/`: requirements, API, security, and data design.
@@ -53,11 +53,11 @@ Use a `/api/v1` prefix and group endpoints by domain. Route modules remain thin:
 
 Use SQLAlchemy with PostgreSQL as the production relational database and SQLite for local development and tests that do not depend on PostgreSQL-specific behavior. Stage 3 adds the identity, business, membership, session, and one-time-token schema through Flask-Migrate/Alembic. Stage 4 adds the initial customer table through a forward-only migration. Every tenant-owned entity must carry a business relationship, and service queries must include the authorised business scope. Never rely on automatic production table creation.
 
-The Stage 1 entity design is documented in [DATABASE.md](DATABASE.md). No domain tables are implemented yet.
+The Stage 1 entity design is documented in [DATABASE.md](DATABASE.md). Stage 4 implements the initial customer, product/inventory, sale/payment, expense, and business-profile tables with additive migrations.
 
 ## Authentication and authorization
 
-Stage 3 implements verified identities, Argon2id password hashing, password-plus-OTP login, revocable server-side sessions, one-time verification/reset tokens, CSRF protection, and server-enforced membership-role checks. Authentication OTPs are sent through the Resend service adapter; only keyed hashes of OTPs are stored. Authentication uses a random opaque `HttpOnly` cookie; only its SHA-256 digest is stored. The React client obtains a CSRF token from the API and sends it in `X-CSRFToken` on mutations. Production cookies are `Secure`, `SameSite=Lax`, and use the `__Host-` prefix. A business context must be resolved from the authenticated user's active membership, not trusted from a client-supplied business ID alone. No bearer token or browser local-storage credential is used.
+Stage 3 implements verified identities, Argon2id password hashing, password-plus-OTP login, revocable server-side sessions, one-time verification/reset tokens, CSRF protection, and server-enforced membership-role checks. Stage 4 applies those controls to every implemented business data family. Authentication OTPs are sent through the Resend service adapter; only keyed hashes of OTPs are stored. Authentication uses a random opaque `HttpOnly` cookie; only its SHA-256 digest is stored. The React client obtains a CSRF token from the API and sends it in `X-CSRFToken` on mutations. Production cookies are `Secure`, `SameSite=Lax`, and use the `__Host-` prefix. A business context must be resolved from the authenticated user's active membership, not trusted from a client-supplied business ID alone. No bearer token or browser local-storage credential is used.
 
 ## Subscription architecture
 

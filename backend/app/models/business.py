@@ -15,6 +15,11 @@ class Business(db.Model):
 
     id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     name = db.Column(db.String(160), nullable=False)
+    industry = db.Column(db.String(80), nullable=True)
+    contact_email = db.Column(db.String(254), nullable=True)
+    phone = db.Column(db.String(32), nullable=True)
+    address = db.Column(db.String(500), nullable=True)
+    currency = db.Column(db.String(3), nullable=False, default="NGN", server_default="NGN")
     status = db.Column(db.String(24), nullable=False, default="active")
     created_at = db.Column(db.DateTime(timezone=True), nullable=False, default=utc_now)
     updated_at = db.Column(

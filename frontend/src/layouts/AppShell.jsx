@@ -40,7 +40,6 @@ function AppShell({ activePage, navigate, user, onLogout, activeBusinessId, onBu
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const [search, setSearch] = useState("");
-  const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [sidebarProfileOpen, setSidebarProfileOpen] = useState(false);
   const [logoutError, setLogoutError] = useState("");
@@ -50,7 +49,7 @@ function AppShell({ activePage, navigate, user, onLogout, activeBusinessId, onBu
   const businessName = selectedBusiness.business_name || "Business account";
   const userInitials = getInitials(user.name);
   const userRole = selectedBusiness.role === "owner" ? "Business owner" : "Team member";
-  const isLivePage = activePage === "customers";
+  const isLivePage = activePage !== "assistant";
   const searchResults = navigation.flatMap((group) => group.items)
     .filter((item) => item[1].toLowerCase().includes(search.trim().toLowerCase()));
 
@@ -114,20 +113,16 @@ function AppShell({ activePage, navigate, user, onLogout, activeBusinessId, onBu
           <button className="mobile-nav-button" aria-label="Open navigation" onClick={() => setSidebarOpen(true)}><Icon name="menu" /></button>
           <div className="topbar__title"><span>Workspace</span><Icon name="chevron" size={14} /><b>{pageTitle}</b></div>
           <div className="topbar__right">
-            <label className="global-search"><Icon name="search" size={17} /><input aria-label="Search navigation" placeholder="Search pages..." value={search} onChange={(event) => setSearch(event.target.value)} /><kbd>⌘ K</kbd></label>
+            <label className="global-search"><Icon name="search" size={17} /><input aria-label="Search navigation" placeholder="Search pages..." value={search} onChange={(event) => setSearch(event.target.value)} /></label>
             {search.trim() && <div className="search-results">{searchResults.length ? searchResults.map(([id, label, icon]) => <button key={id} onClick={() => go(id)}><Icon name={icon} size={16} />{label}<Icon name="arrowRight" size={14} /></button>) : <span>No pages found</span>}</div>}
-            <div className="topbar-popover-wrap">
-              <button className={`topbar-icon-button${notificationsOpen ? " is-active" : ""}`} aria-label="Notifications" aria-expanded={notificationsOpen} onClick={() => { setNotificationsOpen(!notificationsOpen); setProfileOpen(false); }}><Icon name="bell" size={19} /><i /></button>
-              {notificationsOpen && <div className="notification-popover"><div><b>Notifications</b><span>DEMO</span></div><p><Icon name="package" size={16} /> 3 products are below their sample reorder level.</p><small>Example alert · demonstration workspace</small></div>}
-            </div>
-            <button className="topbar-user" aria-expanded={profileOpen} onClick={() => { setProfileOpen(!profileOpen); setNotificationsOpen(false); }}><Avatar initials={userInitials} color="teal" small /><span>{user.name}</span><Icon name="arrowDown" size={15} /></button>
+            <button className="topbar-user" aria-expanded={profileOpen} onClick={() => setProfileOpen(!profileOpen)}><Avatar initials={userInitials} color="teal" small /><span>{user.name}</span><Icon name="arrowDown" size={15} /></button>
             {profileOpen && <div className="profile-menu profile-menu--topbar"><button onClick={() => { setProfileOpen(false); go("settings"); }}><Icon name="settings" size={16} />Account settings</button><button onClick={signOut}><Icon name="logout" size={16} />Sign out</button>{logoutError && <p className="form-feedback form-feedback--error" role="alert">{logoutError}</p>}</div>}
           </div>
         </header>
         <main className="dashboard-content">
           {!isLivePage && <DemoNotice />}
           {children}
-          <footer className="app-footer"><span>© 2026 STEER</span><span><Icon name="shield" size={14} />{isLivePage ? " Customer records are live; other modules remain in preview." : " Demonstration workspace · sample figures only"}</span></footer>
+          <footer className="app-footer"><span>© 2026 STEER</span><span><Icon name="shield" size={14} />{isLivePage ? " Business data is scoped to your selected workspace." : " Demonstration workspace · sample figures only"}</span></footer>
         </main>
       </div>
     </div>

@@ -3,6 +3,7 @@
 from flask import Blueprint
 
 from app.routes.auth import auth
+from app.routes.business_profiles import business_profiles
 from app.routes.customers import customers
 from app.routes.expenses import expenses
 from app.routes.health import health
@@ -13,6 +14,7 @@ from app.routes.sales import sales
 api = Blueprint("api", __name__)
 api.register_blueprint(health)
 api.register_blueprint(auth, url_prefix="/auth")
+api.register_blueprint(business_profiles, url_prefix="/businesses")
 api.register_blueprint(customers, url_prefix="/businesses")
 api.register_blueprint(products, url_prefix="/businesses")
 api.register_blueprint(sales, url_prefix="/businesses")

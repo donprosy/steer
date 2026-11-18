@@ -30,6 +30,8 @@ Each stage should be reviewed and accepted before moving into the next. Scope is
 - Validate practical workflows with pilot businesses and reconcile reports against source records.
 - Exit: core operations are reliable, usable, and financially consistent for the supported business types.
 
+The Stage 4 implementation now includes business profiles, customers and purchase history, the product/service catalogue, inventory movements, sales and payments/refunds/cancellations, searchable and paginated expenses, live dashboard trends and metrics, multi-category reports, and CSV exports. Formal exit still requires pilot workflow reconciliation, production-PostgreSQL migration verification, and browser-driven multi-business/role acceptance. See `STAGE_4_REPORT.md`.
+
 ## 5. AI business assistant
 
 - Select a provider only after cost, privacy, retention, and quality evaluation.
@@ -37,6 +39,12 @@ Each stage should be reviewed and accepted before moving into the next. Scope is
 - Track usage, enforce quotas, disclose limitations, and test prompt/data privacy behavior.
 - Voice AI remains explicitly out of initial scope and requires a separate product/security decision.
 - Exit: quality, privacy, safety, usage accounting, and unit economics meet agreed thresholds.
+
+### Stage 5 handoff preparation
+
+- The Stage 4 business API and financial-summary service provide the future assistant's source of truth; an assistant must query them only after active business-membership authorization.
+- No AI provider, prompt context, conversation storage, usage record, quota, or AI endpoint is implemented yet.
+- Before provider selection, decide data minimization/retention, supported analysis, plan quotas, cost ceilings, and user-facing financial-advice limitations. Voice remains out of scope.
 
 ## 6. Subscription and payment system
 
@@ -73,6 +81,6 @@ Each stage should be reviewed and accepted before moving into the next. Scope is
 - Consider team collaboration, accounting integrations, additional markets/payment methods, advanced reports, and future voice capabilities only with separate validation.
 - Continue security, compliance, accessibility, performance, and data governance improvements.
 
-## Stage 3 implementation boundary
+## Stage 3 implementation boundary (historical)
 
-Account authentication is functional, but the workspace remains explicitly marked as demonstration data. Customer, inventory, sales, expense, reporting, subscription, payment, AI, and administration APIs are not implemented by Stage 3.
+At the end of Stage 3, account authentication was functional while business operations were still demonstration-only. Stage 4 replaced those business-operation demos with the implemented, authenticated workflows documented above. Subscription billing, external payment processing, AI, and platform administration remain future stages.

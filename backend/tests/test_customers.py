@@ -66,6 +66,7 @@ def test_customer_create_profile_update_search_and_delete(
     )
     assert detail.status_code == 200
     assert detail.get_json()["customer"]["notes"] == "Preferred contact by phone."
+    assert "purchase_history" in detail.get_json()["customer"]
 
     updated = client.patch(
         f"{CUSTOMERS_URL.format(business_id=business_id)}/{customer['id']}",
@@ -81,6 +82,7 @@ def test_customer_create_profile_update_search_and_delete(
     )
     assert searched.status_code == 200
     assert [row["id"] for row in searched.get_json()["customers"]] == [customer["id"]]
+    assert "purchase_history" not in searched.get_json()["customers"][0]
 
     deleted = client.delete(
         f"{CUSTOMERS_URL.format(business_id=business_id)}/{customer['id']}",

@@ -18,6 +18,16 @@ def create_app(test_config=None):
     app = Flask(__name__, instance_relative_config=True)
     test_config = test_config or {}
     app_environment = os.environ.get("APP_ENV", test_config.get("APP_ENV", "development")).strip().lower()
+    configured_environment = str(
+        test_config.get("APP_ENV", app_environment)
+    ).strip().lower()
+    auth_email_mode = test_config.get("AUTH_EMAIL_MODE")
+    if auth_email_mode is None:
+        auth_email_mode = (
+            os.environ.get("AUTH_EMAIL_MODE", "resend")
+            if configured_environment == "development"
+            else "resend"
+        )
     secret_key = os.environ.get("SECRET_KEY", test_config.get("SECRET_KEY"))
     if not secret_key or secret_key == "replace-this-local-development-secret":
         if app_environment in {"production", "prod"}:
@@ -70,6 +80,7 @@ def create_app(test_config=None):
         ),
         MAIL_FROM=os.environ.get("MAIL_FROM"),
         RESEND_API_KEY=os.environ.get("RESEND_API_KEY"),
+        AUTH_EMAIL_MODE=str(auth_email_mode).strip().lower(),
         RATELIMIT_STORAGE_URI=os.environ.get("RATELIMIT_STORAGE_URI", "memory://"),
         RATELIMIT_ENABLED=app_environment != "testing",
     )
@@ -114,6 +125,12 @@ def create_app(test_config=None):
 
 def _validate_security_configuration(app):
     """Reject production configurations that would weaken auth guarantees."""
+    email_mode = app.config.get("AUTH_EMAIL_MODE", "resend")
+    if email_mode not in {"resend", "console"}:
+        raise RuntimeError("AUTH_EMAIL_MODE must be 'resend' or 'console'.")
+    if email_mode == "console" and app.config["APP_ENV"] != "development":
+        raise RuntimeError("Console authentication email is available only in development.")
+
     if app.config["APP_ENV"] in {"production", "prod"}:
         secret_key = app.config.get("SECRET_KEY", "")
         if len(secret_key) < 32 or secret_key == "replace-this-local-development-secret":

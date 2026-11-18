@@ -15,7 +15,7 @@ function currentPath() {
 function AppContent() {
   const [path, setPath] = useState(currentPath);
   const [selectedBusinessId, setSelectedBusinessId] = useState(null);
-  const { user, loading, logout } = useAuth();
+  const { user, loading, logout, refreshUser } = useAuth();
 
   useEffect(() => {
     if (user?.businesses?.length) {
@@ -82,7 +82,9 @@ function AppContent() {
         <DashboardPage
           page={page}
           navigate={navigate}
+          user={user}
           businessId={businessId}
+          onProfileSaved={refreshUser}
           businessRole={user.businesses?.find((item) => item.business_id === businessId)?.role || user.businesses?.[0]?.role}
         />
       </AppShell>

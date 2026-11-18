@@ -17,10 +17,23 @@ class EmailDeliveryError(RuntimeError):
 
 
 def send_account_token(user, purpose, code):
-    """Send an account OTP through Resend, or use the configured test sender."""
+    """Deliver an account OTP through the selected development or email transport."""
     test_sender = current_app.config.get("AUTH_EMAIL_SENDER")
     if test_sender is not None:
         test_sender(user.email, purpose, code)
+        return
+
+    if current_app.config.get("AUTH_EMAIL_MODE") == "console":
+        if current_app.config.get("APP_ENV") != "development":
+            raise EmailDeliveryError(
+                "Console authentication email is available only in development."
+            )
+        current_app.logger.warning(
+            "DEV ONLY authentication code for %s (%s): %s",
+            user.email,
+            purpose,
+            code,
+        )
         return
 
     subject, text, html = render_otp_email(user.display_name, purpose, code)

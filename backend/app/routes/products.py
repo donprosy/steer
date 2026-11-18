@@ -3,7 +3,7 @@
 from flask import Blueprint, g, jsonify, request
 
 from app import db
-from app.models import Product
+from app.models import InventoryMovement, Product
 from app.security import require_business_role
 from app.services.product_service import (
     ProductInputError,
@@ -52,6 +52,9 @@ def list_products(business_id):
         low_stock_only = request.args.get("low_stock", "0").strip().lower() in {"1", "true", "yes"}
         page = _positive_integer(request.args.get("page", "1"), "Page", 1000000)
         per_page = _positive_integer(request.args.get("per_page", "25"), "Page size", 100)
+        sort = request.args.get("sort", "newest").strip().lower()
+        if sort not in {"newest", "name", "price_low", "price_high", "stock_low"}:
+            raise ProductInputError("Unsupported product sort.")
     except ProductInputError as error:
         return error_response("validation_error", str(error), 400)
 
@@ -62,6 +65,7 @@ def list_products(business_id):
         low_stock_only,
         page,
         per_page,
+        sort,
     )
 
     return jsonify(
@@ -87,6 +91,19 @@ def create_product(business_id):
 
     product = Product(business_id=business_id, **data)
     db.session.add(product)
+    db.session.flush()
+    if product.type == "product" and product.quantity_on_hand > 0:
+        db.session.add(
+            InventoryMovement(
+                business_id=business_id,
+                product_id=product.id,
+                user_id=g.current_user.id,
+                delta_quantity=product.quantity_on_hand,
+                quantity_after=product.quantity_on_hand,
+                unit_cost=product.purchase_cost,
+                reason="opening_stock",
+            )
+        )
     db.session.commit()
     return jsonify({"product": serialize_product(product)}), 201
 
@@ -108,7 +125,16 @@ def update_product(business_id, product_id):
     if product is None:
         return error_response("product_not_found", "Product not found.", 404)
     try:
-        data = validate_product_input(_request_payload(), partial=True)
+        payload = _request_payload()
+        data = validate_product_input(payload, partial=True)
+        if "quantity_on_hand" in payload:
+            raise ProductInputError("Use a stock adjustment to change inventory quantities.")
+        if (
+            data.get("type") == "service"
+            and product.type == "product"
+            and product.quantity_on_hand > 0
+        ):
+            raise ProductInputError("Reduce product stock to zero before changing it to a service.")
     except ProductInputError as error:
         return error_response("validation_error", str(error), 400)
 

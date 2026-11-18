@@ -1,6 +1,6 @@
 # REST API Plan
 
-Implemented and planned endpoints use the `/api/v1` prefix and JSON request/response bodies unless a future file-upload flow is explicitly documented. Stage 3 implements health and authentication/account endpoints; Stage 4 adds customer management. Other business-management endpoints remain planned. Authentication, validation, business-scope authorization, pagination, and consistent error responses are required before other endpoint groups are exposed.
+Implemented and planned endpoints use the `/api/v1` prefix and JSON request/response bodies unless a future file-upload flow is explicitly documented. Stage 3 implements health and authentication/account endpoints. Stage 4 implements business profiles, customers, products/inventory, sales/payments/refunds, expenses, dashboard summaries, reports, and CSV exports. Authentication, validation, business-scope authorization, pagination, and consistent error responses are required for every endpoint.
 
 ## Conventions
 
@@ -21,6 +21,13 @@ The existing `service` response identifier (`don-prosy-business-manager`) is ret
 
 ## Implemented endpoint groups
 
+## Business profiles (Stage 4)
+
+| Method | Path | Purpose |
+|---|---|---|
+| `GET` | `/api/v1/businesses/{business_id}` | Read profile data for an active business member. |
+| `PATCH` | `/api/v1/businesses/{business_id}` | Update name and contact details; owner-only. Currency is fixed to NGN. |
+
 ## Customer management (Stage 4)
 
 All customer endpoints require a valid authenticated session and CSRF token for mutations. The business ID is only a resource lookup key: the server verifies an active membership before serving any customer resource. Inaccessible businesses and customers return the same `404` response to avoid confirming their existence.
@@ -33,7 +40,7 @@ All customer endpoints require a valid authenticated session and CSRF token for 
 | `PATCH` | `/api/v1/businesses/{business_id}/customers/{customer_id}` | Update explicitly supported customer fields. |
 | `DELETE` | `/api/v1/businesses/{business_id}/customers/{customer_id}` | Delete a customer; restricted to owners and managers. |
 
-List responses contain `customers` and `pagination` (`page`, `per_page`, `total`, `pages`). Customer mutations return a serialized `customer` object. Validation errors use the API's standard `{ "error": { "code": "...", "message": "..." } }` response shape. Purchase history and outstanding balances will be exposed only after sales and payment records are implemented.
+List responses contain `customers` and `pagination` (`page`, `per_page`, `total`, `pages`). List rows include financial summaries but omit purchase history to keep collection responses bounded; the customer detail endpoint includes purchase history. Customer mutations return a serialized `customer` object. Validation errors use the API's standard `{ "error": { "code": "...", "message": "..." } }` response shape. Purchase history and balances are derived from sales and payment records.
 
 ## Authentication
 
@@ -66,61 +73,50 @@ Mutating endpoints are CSRF-protected. The frontend fetches `/api/v1/auth/csrf` 
 
 Unverified accounts cannot sign in. Successful login OTP verification creates an authenticated session. Email-dependent OTP operations return `503` when Resend is not configured or delivery fails. Set `RESEND_API_KEY` and `MAIL_FROM` to a sender address verified with Resend. Non-OTP account notifications continue to use optional SMTP settings.
 
-## Planned endpoint groups
-
-### Businesses
+## Product and inventory management (Stage 4)
 
 | Method and path | Responsibility |
 |---|---|
-| `GET /api/v1/businesses` | List businesses the current user may access. |
-| `POST /api/v1/businesses` | Create a business and initial owner membership. |
-| `GET /api/v1/businesses/{business_id}` | Read an authorised business profile. |
-| `PATCH /api/v1/businesses/{business_id}` | Update permitted business settings. |
-
-### Products
-
-| Method and path | Responsibility |
-|---|---|
-| `GET /api/v1/businesses/{business_id}/products` | List/search products and services. |
+| `GET /api/v1/businesses/{business_id}/products` | List/search products and services with pagination, low-stock filtering and sorting (`newest`, `name`, `price_low`, `price_high`, `stock_low`). |
 | `POST /api/v1/businesses/{business_id}/products` | Create a catalogue item. |
 | `GET /api/v1/businesses/{business_id}/products/{product_id}` | Read one scoped item. |
 | `PATCH /api/v1/businesses/{business_id}/products/{product_id}` | Update catalogue details without rewriting historical sale snapshots. |
-| `DELETE /api/v1/businesses/{business_id}/products/{product_id}` | Archive an item subject to sales/history constraints. |
+| `POST /api/v1/businesses/{business_id}/products/{product_id}/archive` | Archive an item without deleting sales history. |
 
-### Inventory
+Inventory adjustments use `POST /api/v1/businesses/{business_id}/products/{product_id}/stock-adjustment`; product detail includes recent movements. Sale, opening-stock, and adjustment operations write stock movements.
 
-| Method and path | Responsibility |
-|---|---|
-| `GET /api/v1/businesses/{business_id}/inventory` | Read current stock and low-stock indicators. |
-| `POST /api/v1/businesses/{business_id}/inventory/movements` | Record an authorised stock receipt, sale, or adjustment with an audit trail. |
-| `GET /api/v1/businesses/{business_id}/inventory/movements` | Paginated movement history and filters. |
-
-### Sales
+## Sales and payments (Stage 4)
 
 | Method and path | Responsibility |
 |---|---|
-| `GET /api/v1/businesses/{business_id}/sales` | List sales by date/status/customer. |
-| `POST /api/v1/businesses/{business_id}/sales` | Record a sale and validated line items; apply inventory policy transactionally. |
+| `GET /api/v1/businesses/{business_id}/sales?q=&page=1&per_page=25&range=this_month&status=all` | Search by reference/notes, filter by status and supported period, and paginate sales. Status values are `all`, `pending`, `partially_paid`, `paid`, `cancelled`, and `refunded`. Date ranges may be `today`, `this_week`, `this_month`, `this_year`, or `custom` with `start_date` and `end_date`. |
+| `POST /api/v1/businesses/{business_id}/sales` | Record validated multi-line sales; decrement inventory transactionally. |
 | `GET /api/v1/businesses/{business_id}/sales/{sale_id}` | Read sale details within business scope. |
-| `POST /api/v1/businesses/{business_id}/sales/{sale_id}/void` | Void a sale under an explicit auditable policy. |
+| `PATCH /api/v1/businesses/{business_id}/sales/{sale_id}` | Owner/manager-only metadata edit for customer, notes and sale date. Cancelled/refunded sales are locked. Line-item and total edits remain unsupported. |
+| `POST /api/v1/businesses/{business_id}/sales/{sale_id}/payments` | Record a bounded incoming payment. |
+| `POST /api/v1/businesses/{business_id}/sales/{sale_id}/refunds` | Record a bounded refund; a full refund restores physical product stock. |
+| `POST /api/v1/businesses/{business_id}/sales/{sale_id}/cancel` | Cancel sales with no net collected funds. |
 
-### Expenses
+## Expenses (Stage 4)
 
 | Method and path | Responsibility |
 |---|---|
-| `GET /api/v1/businesses/{business_id}/expenses` | Paginated, filtered expense list. |
+| `GET /api/v1/businesses/{business_id}/expenses?q=&page=1&per_page=25&range=this_month` | Search by description/category and filter/paginate expenses. Date ranges may be `today`, `this_week`, `this_month`, `this_year`, or `custom` with `start_date` and `end_date`. |
 | `POST /api/v1/businesses/{business_id}/expenses` | Record a validated expense. |
-| `GET /api/v1/businesses/{business_id}/expenses/{expense_id}` | Read one scoped expense. |
 | `PATCH /api/v1/businesses/{business_id}/expenses/{expense_id}` | Correct permitted fields with audit requirements. |
+| `DELETE /api/v1/businesses/{business_id}/expenses/{expense_id}` | Delete an expense; restricted to owners and managers. |
 
-### Reports
+## Dashboard and reports (Stage 4)
 
 | Method and path | Responsibility |
 |---|---|
-| `GET /api/v1/businesses/{business_id}/reports/overview` | Period summary for sales, expenses, estimated profit, and inventory. |
-| `GET /api/v1/businesses/{business_id}/reports/sales` | Sales trends and breakdowns. |
-| `GET /api/v1/businesses/{business_id}/reports/expenses` | Expense totals and categories. |
-| `GET /api/v1/businesses/{business_id}/reports/inventory` | Stock valuation/alerts only after calculation rules are defined. |
+| `GET /api/v1/businesses/{business_id}/dashboard?range=this_month` | Live financial summary, business/customer and inventory counts, recent sales, top products, stock alerts, and net-sales/expense trend. |
+| `GET /api/v1/businesses/{business_id}/reports?type=sales&range=this_month` | Records for sales, expenses, inventory, customers, payments, receivables, product performance, or profit/loss. |
+| `GET /api/v1/businesses/{business_id}/reports/export?type=sales&range=this_month` | CSV export for supported report categories. Text cells are escaped and formula-prefixed content neutralized. |
+
+Dashboard and report ranges accept `today`, `this_week`, `this_month`, `this_year`, or `custom`. Custom ranges require ISO `start_date` and `end_date`; date-only end dates include the full day. Currency is currently NGN.
+
+## Planned endpoint groups
 
 ### AI assistant
 

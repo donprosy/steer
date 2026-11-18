@@ -17,6 +17,7 @@ def app(sent_account_emails):
             "SECRET_KEY": "test-secret-key-that-is-at-least-32-bytes",
             "SQLALCHEMY_DATABASE_URI": "sqlite://",
             "TESTING": True,
+            "AUTH_EMAIL_MODE": "resend",
             "WTF_CSRF_ENABLED": True,
             "RATELIMIT_ENABLED": False,
             "MAIL_SERVER": "smtp.example.test",

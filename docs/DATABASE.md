@@ -7,17 +7,16 @@ PostgreSQL is the planned production database; SQLAlchemy is the persistence lay
 | Entity | Purpose | Important relationships / constraints |
 |---|---|---|
 | `users` | Sign-in identity and profile | **Implemented.** Unique normalized email; Argon2id password hash; active and email-verification state. |
-| `businesses` | Tenant/workspace and business profile | **Minimal schema implemented** for registration; one owner at creation; multi-business membership is supported by the relationship. |
+| `businesses` | Tenant/workspace and business profile | **Implemented.** Name, industry, contact email, phone, address, and fixed `NGN` currency; multi-business membership is supported by the relationship. |
 | `business_memberships` | User-to-business membership and role | **Implemented.** Join table; unique `(business_id, user_id)`; role and membership state. |
 | `auth_sessions` | Revocable browser sessions | **Implemented.** Stores only a SHA-256 digest of a random cookie token, expiry, last-seen and revocation timestamps, and remember-me state. |
 | `auth_tokens` | Login, email-verification, and password-reset OTPs | **Implemented.** Stores only a keyed HMAC digest of a random 6-digit code, purpose, expiry, incorrect-attempt count, use timestamp, and the login challenge's remember-me choice. |
-| `customers` | Customer/contact records | **Initial schema implemented.** Belongs to one business; optional relationship to a user is not required. Purchase history and balances depend on sales/payment records. |
-| `products` | Product/service catalogue | Belongs to one business; SKU uniqueness should be scoped to business if used. |
-| `inventory_items` | Current stock or stock configuration | Belongs to a product/business; quantity and reorder threshold; enforce non-negative rules where appropriate. |
-| `inventory_movements` | Auditable stock changes | Belongs to a business and product; records signed quantity, reason, timestamp, and actor; supports reconciliation of current stock. |
-| `sales` | Sale header, date, status, totals | Belongs to a business; optionally references a customer; status and totals must be validated on the server. |
-| `sale_items` | Product/service lines for each sale | Belongs to a sale and product; stores quantity and price snapshot so historical sales remain stable when catalogue prices change. |
-| `expenses` | Business costs | Belongs to a business; includes amount, currency, category, date, and optional note/receipt metadata. |
+| `customers` | Customer/contact records | **Implemented.** Business-scoped profiles, searchable/paginated lists, and sale/payment-derived purchase and receivable summaries. |
+| `products` | Product/service catalogue | **Implemented.** Business-scoped catalogue and archive state; SKU uniqueness is not yet enforced. |
+| `inventory_movements` | Auditable stock changes | **Implemented.** Signed quantity, resulting balance, reason, timestamp, and optional actor; product opening stock and sales/adjustments are recorded. |
+| `sales` | Sale header, date, status, totals | **Implemented.** Business-scoped, optionally customer-linked, with server-validated sale and payment/refund/cancellation workflows. |
+| `sale_items` | Product/service lines for each sale | **Implemented.** Quantity, description, unit-price, and unit-cost snapshots preserve historical sale details. |
+| `expenses` | Business costs | **Implemented.** Business-scoped category, amount, payment method, date, and optional notes. |
 | `plans` | Product plan definitions and entitlements | Defines internal plan key and limits; provider-specific IDs stored separately/configurably. |
 | `subscriptions` | Business subscription lifecycle | Belongs to a business and plan; stores status, billing interval, provider reference, period boundaries, and cancellation/expiry state. |
 | `payments` | Payment transactions and reconciliation | Belongs to a subscription/business; provider transaction reference, amount/currency, status, and verified timestamps; unique provider reference. |
@@ -55,7 +54,7 @@ users 1---* ai_usage_records (optional actor)
 
 ## Financial and reporting notes
 
-Store monetary values as fixed-precision decimal/numeric amounts, not binary floating point. Persist currency explicitly. Define whether revenue is gross/net, how refunds/voids are handled, and whether profit means gross profit or revenue less recorded expenses before presenting figures. Reports should derive from auditable source records, and any denormalized aggregates need a documented reconciliation strategy.
+Store monetary values as fixed-precision decimal/numeric amounts, not binary floating point. Current business profiles use NGN only; multi-currency and tax handling are deferred until launch markets are confirmed. Dashboard definitions: gross sales exclude cancelled sales; net sales subtract received refunds; net cash collected subtracts refunds from received payments; receivables equal gross sale value less received incoming payments (refunds are reported separately and do not turn a paid sale into a customer debt); gross profit is net sales less cost of goods sold; net profit is gross profit less recorded operating expenses. A full refund returns all physical line-item stock and removes that sale's COGS; partial cash refunds do not infer returned quantities, so physical returns must be recorded as an inventory adjustment. Reports derive from source records.
 
 ## Deferred design questions
 

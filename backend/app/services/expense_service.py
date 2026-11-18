@@ -91,7 +91,12 @@ def search_expenses(business_id, search, page, per_page, start_date=None, end_da
     if search:
         escaped = search.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
         pattern = f"%{escaped}%"
-        filters.append(or_(Expense.description.ilike(pattern, escape="\\"), Expense.category.ilike(pattern, escape="\\")))
+        filters.append(
+            or_(
+                Expense.description.ilike(pattern, escape="\\"),
+                Expense.category.ilike(pattern, escape="\\"),
+            )
+        )
     if start_date is not None:
         filters.append(Expense.expense_date >= start_date)
     if end_date is not None:

@@ -120,6 +120,65 @@ def test_registration_verification_login_session_and_logout(
     assert completed.get_json()["user"]["email"] == email
 
 
+def test_development_console_delivery_supports_registration_and_login(
+    app, client, csrf_headers, caplog
+):
+    app.config.update(
+        APP_ENV="development",
+        AUTH_EMAIL_SENDER=None,
+        AUTH_EMAIL_MODE="console",
+        RESEND_API_KEY=None,
+        MAIL_FROM=None,
+        MAIL_DEFAULT_SENDER=None,
+    )
+    caplog.set_level("WARNING")
+
+    registration = register_account(client, csrf_headers)
+    assert registration.status_code == 202
+    assert "printed in the backend terminal" in registration.get_json()["message"]
+    verification_code = caplog.records[-1].getMessage().rsplit(" ", 1)[-1]
+    assert len(verification_code) == 6 and verification_code.isdigit()
+    assert verify_account(
+        client, csrf_headers, "owner@example.com", verification_code
+    ).status_code == 200
+
+    assert client.post(f"{AUTH_URL}/logout", headers=csrf_headers).status_code == 200
+    caplog.clear()
+    login = client.post(
+        f"{AUTH_URL}/login",
+        headers=csrf_headers,
+        json={"email": "owner@example.com", "password": PASSWORD},
+    )
+    assert login.status_code == 202
+    assert "printed in the backend terminal" in login.get_json()["message"]
+    login_code = caplog.records[-1].getMessage().rsplit(" ", 1)[-1]
+    assert len(login_code) == 6 and login_code.isdigit()
+
+    completed = client.post(
+        f"{AUTH_URL}/otp/verify",
+        headers=csrf_headers,
+        json={
+            "challenge_id": login.get_json()["challenge_id"],
+            "code": login_code,
+        },
+    )
+    assert completed.status_code == 200
+    assert client.get(f"{AUTH_URL}/me").status_code == 200
+
+
+def test_console_auth_email_is_rejected_outside_development():
+    from app import create_app
+
+    with pytest.raises(RuntimeError, match="available only in development"):
+        create_app(
+            {
+                "APP_ENV": "production",
+                "SECRET_KEY": "test-secret-key-that-is-at-least-32-bytes",
+                "AUTH_EMAIL_MODE": "console",
+            }
+        )
+
+
 def test_registration_rejects_duplicates_invalid_email_and_invalid_password(
     client, csrf_headers, sent_account_emails
 ):

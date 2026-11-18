@@ -1,12 +1,14 @@
 """Expense management endpoints."""
 
 from datetime import datetime
+import logging
 
 from flask import Blueprint, g, jsonify, request
 
 from app import db
 from app.models import Expense
 from app.security import require_business_role
+from app.services.date_range import parse_date_range
 from app.services.expense_service import (
     ExpenseInputError,
     search_expenses,
@@ -15,6 +17,7 @@ from app.services.expense_service import (
 )
 
 expenses = Blueprint("expenses", __name__)
+logger = logging.getLogger(__name__)
 
 
 def error_response(code, message, status):
@@ -33,15 +36,23 @@ def _request_payload():
 def list_expenses(business_id):
     try:
         search = request.args.get("q", "").strip()
-        page = max(1, int(request.args.get("page", "1")))
-        per_page = min(100, max(1, int(request.args.get("per_page", "25"))))
+        if len(search) > 100:
+            raise ValueError
+        page = int(request.args.get("page", "1"))
+        per_page = int(request.args.get("per_page", "25"))
+        if page < 1 or page > 1000000 or per_page < 1 or per_page > 100:
+            raise ValueError
         start_date_raw = request.args.get("start_date")
         end_date_raw = request.args.get("end_date")
-    except ValueError:
-        return error_response("validation_error", "Pagination values must be valid integers.", 400)
-
-    start_date = datetime.fromisoformat(start_date_raw) if start_date_raw else None
-    end_date = datetime.fromisoformat(end_date_raw) if end_date_raw else None
+        if request.args.get("range"):
+            start_date, end_date = parse_date_range(request.args)
+        else:
+            start_date = datetime.fromisoformat(start_date_raw.replace("Z", "+00:00")) if start_date_raw else None
+            end_date = datetime.fromisoformat(end_date_raw.replace("Z", "+00:00")) if end_date_raw else None
+        if start_date and end_date and start_date > end_date:
+            return error_response("validation_error", "start_date must be earlier than or equal to end_date.", 400)
+    except (AttributeError, ValueError):
+        return error_response("validation_error", "Provide valid pagination and ISO 8601 date values.", 400)
 
     rows, total = search_expenses(
         business_id,
@@ -74,6 +85,7 @@ def create_expense(business_id):
         db.session.rollback()
         return error_response("validation_error", str(exc), 400)
     except Exception:
+        logger.exception("Unexpected error creating expense for business %s", business_id)
         db.session.rollback()
         return error_response("expense_failed", "The expense could not be recorded.", 500)
     return jsonify({"expense": serialize_expense(expense)}), 201

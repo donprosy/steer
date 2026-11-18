@@ -11,6 +11,11 @@ export function AuthProvider({ children }) {
   const acceptAuthenticatedUser = useCallback((authenticatedUser) => {
     setUser(authenticatedUser);
   }, []);
+  const refreshUser = useCallback(async () => {
+    const response = await authApi.currentUser();
+    setUser(response.user);
+    return response.user;
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -42,6 +47,7 @@ export function AuthProvider({ children }) {
     user,
     loading,
     initializationError,
+    refreshUser,
     async login(email, password, rememberMe) {
       return authApi.login(email, password, rememberMe);
     },
@@ -53,7 +59,7 @@ export function AuthProvider({ children }) {
       await authApi.logout();
       setUser(null);
     },
-  }), [user, loading, initializationError, acceptAuthenticatedUser]);
+  }), [user, loading, initializationError, acceptAuthenticatedUser, refreshUser]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

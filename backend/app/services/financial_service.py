@@ -50,7 +50,11 @@ def summarize_business_finances(business_id, start_date=None, end_date=None):
         rows = db.session.execute(
             select(SaleItem.product_id, SaleItem.quantity, SaleItem.unit_cost)
             .join(Sale, Sale.id == SaleItem.sale_id)
-            .where(Sale.business_id == business_id, Sale.id.in_(sale_ids), Sale.status != "cancelled")
+            .where(
+                Sale.business_id == business_id,
+                Sale.id.in_(sale_ids),
+                Sale.status.notin_(("cancelled", "refunded")),
+            )
         ).all()
         for product_id, quantity, unit_cost in rows:
             cogs += (Decimal(str(quantity)) * Decimal(str(unit_cost))).quantize(Decimal("0.01"))
@@ -70,15 +74,30 @@ def summarize_business_finances(business_id, start_date=None, end_date=None):
     net_sales = total_sales - refund_total
     gross_profit = net_sales - cogs
     net_profit = gross_profit - expense_total
+    net_cash_collected = incoming_total - refund_total
     outstanding_receivables = sum(
-        (max(Decimal("0.00"), sale.total_amount - sum((p.amount for p in sale.payments if p.direction == "incoming" and p.status == "received"), Decimal("0.00"))) for sale in sales),
+        (
+            max(
+                Decimal("0.00"),
+                sale.total_amount
+                - sum(
+                    (
+                        payment.amount
+                        for payment in sale.payments
+                        if payment.direction == "incoming" and payment.status == "received"
+                    ),
+                    Decimal("0.00"),
+                ),
+            )
+            for sale in sales
+        ),
         Decimal("0.00"),
     )
 
     return {
         "total_sales": format_money(total_sales),
         "net_sales": format_money(net_sales),
-        "cash_collected": format_money(incoming_total),
+        "cash_collected": format_money(net_cash_collected),
         "outstanding_receivables": format_money(outstanding_receivables),
         "cogs": format_money(cogs),
         "gross_profit": format_money(gross_profit),

@@ -63,6 +63,9 @@ def test_product_create_update_inventory_and_history(app, client, csrf_headers):
     assert product["quantity_on_hand"] == "12"
     assert product["reorder_level"] == "5"
     assert product["type"] == "product"
+    assert client.get(
+        f"{PRODUCTS_URL.format(business_id=business_id)}/{product['id']}"
+    ).get_json()["movements"][0]["reason"] == "opening_stock"
 
     adjusted = client.post(
         f"{PRODUCTS_URL.format(business_id=business_id)}/{product['id']}/stock-adjustment",
@@ -90,6 +93,12 @@ def test_product_create_update_inventory_and_history(app, client, csrf_headers):
     assert updated.status_code == 200
     assert updated.get_json()["product"]["name"] == "Premium rice sack"
     assert updated.get_json()["product"]["selling_price"] == "5500.00"
+    quantity_update = client.patch(
+        f"{PRODUCTS_URL.format(business_id=business_id)}/{product['id']}",
+        headers=csrf_headers,
+        json={"quantity_on_hand": "99"},
+    )
+    assert quantity_update.status_code == 400
 
 
 def test_product_list_filters_low_stock_and_services_are_not_physical_inventory(
@@ -141,6 +150,18 @@ def test_product_list_filters_low_stock_and_services_are_not_physical_inventory(
     assert service["type"] == "service"
     assert service["quantity_on_hand"] == "0"
     assert service["stock_unit"] == "service"
+
+    sorted_by_name = client.get(
+        f"{PRODUCTS_URL.format(business_id=business_id)}?sort=name"
+    )
+    assert sorted_by_name.status_code == 200
+    names = [row["name"] for row in sorted_by_name.get_json()["products"]]
+    assert names == sorted(names)
+
+    invalid_sort = client.get(
+        f"{PRODUCTS_URL.format(business_id=business_id)}?sort=random"
+    )
+    assert invalid_sort.status_code == 400
 
 
 def test_product_business_isolation_and_staff_permissions(app, client, csrf_headers):

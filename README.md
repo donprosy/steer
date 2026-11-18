@@ -2,7 +2,7 @@
 
 **Take Control. Move Your Business Forward.**
 
-STEER is an AI-powered business management platform designed to help business owners manage operations, monitor performance, and make smarter decisions. Stages 1 and 2 established the product foundation and responsive frontend. Stage 3 adds real email-verified account authentication, revocable sessions, password recovery, and a business-membership authorization foundation. Stage 4 is in progress: customer management uses tenant-scoped backend records; other workspace data remains demonstration content until its module is implemented. The AI assistant is not connected.
+STEER is an AI-powered business management platform designed to help business owners manage operations, monitor performance, and make smarter decisions. Stages 1–3 established the product foundation, responsive frontend, and verified account authentication. Stage 4 implements tenant-scoped business profiles, customers, products, stock movements, sales/payments/refunds, expenses, dashboard calculations, reports, and CSV exports. The Stage 4 report records what is implemented and what remains before formal pilot acceptance. The AI assistant is not connected; Stage 5 is the next planned stage.
 
 This project is independent of Don Prosy AI. No code or files have been copied from that product.
 
@@ -18,9 +18,9 @@ This project is independent of Don Prosy AI. No code or files have been copied f
 ```text
 backend/
   app/
-    models/                 # Identity, membership, session, token, and customer entities
-    routes/                 # Health, authentication, and business customer API routes
-    services/               # Auth, customer validation/operations, and email services
+    models/                 # Identity, membership, and business-management entities
+    routes/                 # Health, auth, business profile, and operational APIs
+    services/               # Auth, domain rules, financial calculations, and email
   migrations/               # Versioned Alembic database migrations
   instance/                 # Local SQLite database files (not committed)
   run.py                    # Flask development entry point
@@ -30,8 +30,8 @@ frontend/
     components/              # Shared UI elements, icons, and charts
     hooks/
     layouts/                # Application shell
-    pages/                   # Marketing, authentication, and workspace views
-    services/               # Same-origin JSON API clients, including customer management
+    pages/                   # Marketing, authentication, and live business workspaces
+    services/               # Same-origin JSON API clients for auth and business data
     context/                # Authenticated user state
     styles/                  # Design tokens and responsive styles
 docs/
@@ -64,7 +64,7 @@ flask --app run db upgrade
 python run.py
 ```
 
-Before running, edit the ignored `backend/.env`: replace the local placeholder `SECRET_KEY` with a random value, set `RESEND_API_KEY`, and set `MAIL_FROM` to a sender address verified with Resend. Do not commit credentials. SMTP settings are optional and only used for non-OTP account notifications.
+Before running, edit the ignored `backend/.env` and replace the local placeholder `SECRET_KEY` with a random value. For local sign-in without an email provider, set `AUTH_EMAIL_MODE=console`; authentication OTPs will be printed to the backend terminal. To deliver OTPs by email, set `AUTH_EMAIL_MODE=resend`, `RESEND_API_KEY`, and `MAIL_FROM` to a sender address verified with Resend. Console delivery is rejected outside local development. Do not commit credentials. SMTP settings are optional and only used for non-OTP account notifications.
 
 Generate a local secret in PowerShell with:
 
@@ -93,9 +93,9 @@ Open the local URL printed by Vite (normally `http://localhost:5173`). The Vite 
 
 ## Account and workspace
 
-The public landing page is at `/`. Real account screens are available at `/login`, `/register`, and `/forgot-password`. Registration sends a six-digit verification OTP, then signs in and opens the dashboard after successful verification. Login checks the password, sends a separate six-digit OTP, and creates a session only after that code is verified. Password recovery uses its own OTP. `/app/*` routes require a verified account and sign-in. The overview and business modules other than customers still display labelled sample data. See [STAGE_4_REPORT.md](STAGE_4_REPORT.md) for incremental implementation status and instructor migration handoff.
+The public landing page is at `/`. Real account screens are available at `/login`, `/register`, and `/forgot-password`. Registration sends a six-digit verification OTP, then signs in and opens the dashboard after successful verification. Login checks the password, sends a separate six-digit OTP, and creates a session only after that code is verified. Password recovery uses its own OTP. `/app/*` routes require a verified account and sign-in. Business profile, customer, product, inventory, sales, expenses, dashboard, and report screens use authenticated business-scoped APIs. Business reports and CSV downloads are available from the Reports screen. Currency is currently NGN and is not user-configurable. The AI assistant is clearly marked as a Stage 5 preview and does not send business data to an AI provider. See [STAGE_4_REPORT.md](STAGE_4_REPORT.md) for implementation status, financial definitions, verification evidence, and remaining acceptance checks.
 
-Authentication OTPs expire after ten minutes, are limited to five incorrect attempts, and can be resent after a 60-second cooldown. OTPs are sent through Resend; failed registration email delivery rolls back the pending account and membership.
+Authentication OTPs expire after ten minutes, are limited to five incorrect attempts, and can be resent after a 60-second cooldown. Local console mode prints codes to the backend terminal; Resend email mode is available for delivered email. Failed registration email delivery rolls back the pending account and membership.
 
 Pricing is intentionally shown as “Coming soon.” Payment processing and AI responses are not connected. See [STAGE_2_REPORT.md](STAGE_2_REPORT.md) for completed interface details and verification results.
 
@@ -105,4 +105,4 @@ Copy `backend/.env.example` to `backend/.env` for local settings. Never commit `
 
 ## Stage boundaries
 
-Stage 3 implements account authentication and the identity/membership schema. Stage 4 is incremental; consult [STAGE_4_REPORT.md](STAGE_4_REPORT.md) for implemented scope, outstanding modules, verification evidence, and production database handoff requirements. Architecture and interface details are documented in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), [docs/API.md](docs/API.md), [docs/DATABASE.md](docs/DATABASE.md), [docs/SECURITY.md](docs/SECURITY.md), and [STAGE_ROADMAP.md](STAGE_ROADMAP.md).
+Stage 3 implements account authentication and the identity/membership schema. Stage 4 implements the operational business-management core; its pilot, production database, and end-to-end switching acceptance gates still require completion. Consult [STAGE_4_REPORT.md](STAGE_4_REPORT.md) for exact status and the Stage 5 handoff. Architecture and interface details are documented in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), [docs/API.md](docs/API.md), [docs/DATABASE.md](docs/DATABASE.md), [docs/SECURITY.md](docs/SECURITY.md), and [STAGE_ROADMAP.md](STAGE_ROADMAP.md).

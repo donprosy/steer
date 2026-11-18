@@ -85,6 +85,11 @@ export const customerApi = {
       body: customer,
     });
   },
+  get(businessId, customerId) {
+    return request(
+      `/${encodeURIComponent(businessId)}/customers/${encodeURIComponent(customerId)}`,
+    );
+  },
   update(businessId, customerId, customer) {
     return request(
       `/${encodeURIComponent(businessId)}/customers/${encodeURIComponent(customerId)}`,

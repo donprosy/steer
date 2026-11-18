@@ -53,7 +53,7 @@ def list_customers(business_id):
     records, total = search_customers(business_id, search, page, per_page)
     return jsonify(
         {
-            "customers": [serialize_customer(customer) for customer in records],
+            "customers": [serialize_customer(customer, include_history=False) for customer in records],
             "pagination": {
                 "page": page,
                 "per_page": per_page,

@@ -132,7 +132,7 @@ def validate_product_input(payload, partial=False):
     return data
 
 
-def search_products(business_id, search, product_type, low_stock_only, page, per_page):
+def search_products(business_id, search, product_type, low_stock_only, page, per_page, sort="newest"):
     filters = [Product.business_id == business_id, Product.is_archived.is_(False)]
     if search:
         escaped = search.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
@@ -156,10 +156,17 @@ def search_products(business_id, search, product_type, low_stock_only, page, per
         )
 
     total = db.session.scalar(select(func.count()).select_from(Product).where(*filters)) or 0
+    sort_order = {
+        "name": (Product.name.asc(), Product.id),
+        "price_low": (Product.selling_price.asc(), Product.id),
+        "price_high": (Product.selling_price.desc(), Product.id),
+        "stock_low": (Product.quantity_on_hand.asc(), Product.id),
+        "newest": (Product.created_at.desc(), Product.id),
+    }.get(sort, (Product.created_at.desc(), Product.id))
     rows = db.session.scalars(
         select(Product)
         .where(*filters)
-        .order_by(Product.created_at.desc(), Product.id)
+        .order_by(*sort_order)
         .offset((page - 1) * per_page)
         .limit(per_page)
     ).all()

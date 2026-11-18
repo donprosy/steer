@@ -54,6 +54,11 @@ def error_response(code, message, status):
 def _require_email_delivery_configuration():
     if current_app.config.get("AUTH_EMAIL_SENDER") is not None:
         return None
+    if (
+        current_app.config.get("APP_ENV") == "development"
+        and current_app.config.get("AUTH_EMAIL_MODE") == "console"
+    ):
+        return None
     if not current_app.config.get("RESEND_API_KEY") or not (
         current_app.config.get("MAIL_DEFAULT_SENDER")
         or current_app.config.get("MAIL_FROM")
@@ -82,9 +87,14 @@ def _otp_cooldown_response():
 
 
 def _login_otp_response(challenge_id, email):
+    message = (
+        "Development sign-in code printed in the backend terminal."
+        if current_app.config.get("AUTH_EMAIL_MODE") == "console"
+        else "A sign-in code was sent to your email address."
+    )
     return jsonify(
         {
-            "message": "A sign-in code was sent to your email address.",
+            "message": message,
             "challenge_id": challenge_id,
             "email": email,
         }
@@ -159,7 +169,11 @@ def register():
 
     return jsonify(
         {
-            "message": "A 6-digit verification code was sent to your email address.",
+            "message": (
+                "Development verification code printed in the backend terminal."
+                if current_app.config.get("AUTH_EMAIL_MODE") == "console"
+                else "A 6-digit verification code was sent to your email address."
+            ),
             "email": user.email,
         }
     ), 202

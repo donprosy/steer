@@ -113,7 +113,7 @@ def find_customer(business_id, customer_id):
     )
 
 
-def summarize_customer_finances(customer):
+def summarize_customer_finances(customer, include_history=True):
     sales = [sale for sale in customer.sales if sale.status != "cancelled"]
     total_purchases = sum((sale.total_amount for sale in sales), Decimal("0.00"))
     collected = sum(
@@ -134,26 +134,36 @@ def summarize_customer_finances(customer):
         ),
         Decimal("0.00"),
     )
-    outstanding_balance = max(Decimal("0.00"), total_purchases - collected + refunds)
-    purchase_history = [
-        {
-            "id": sale.reference_number,
-            "date": normalized_datetime(sale.sale_date).isoformat(),
-            "amount": format_decimal(sale.total_amount),
-            "status": sale.status,
-            "outstanding_balance": format_decimal(
-                max(Decimal("0.00"), sale.total_amount - sum((payment.amount for payment in sale.payments if payment.direction == "incoming" and payment.status == "received"), Decimal("0.00")) + sum((payment.amount for payment in sale.payments if payment.direction == "refund" and payment.status == "received"), Decimal("0.00")))
-            ),
-        }
-        for sale in sorted(sales, key=lambda item: item.sale_date, reverse=True)
-    ]
-    return {
+    outstanding_balance = max(Decimal("0.00"), total_purchases - collected)
+    summary = {
         "total_purchases": format_decimal(total_purchases),
         "amount_paid": format_decimal(collected),
         "refund_total": format_decimal(refunds),
         "outstanding_balance": format_decimal(outstanding_balance),
-        "purchase_history": purchase_history,
     }
+    if include_history:
+        summary["purchase_history"] = [
+            {
+                "id": sale.reference_number,
+                "date": normalized_datetime(sale.sale_date).isoformat(),
+                "amount": format_decimal(sale.total_amount),
+                "status": sale.status,
+                "outstanding_balance": format_decimal(
+                    max(
+                        Decimal("0.00"),
+                        sale.total_amount - sum(
+                            (
+                                payment.amount for payment in sale.payments
+                                if payment.direction == "incoming" and payment.status == "received"
+                            ),
+                            Decimal("0.00"),
+                        ),
+                    )
+                ),
+            }
+            for sale in sorted(sales, key=lambda item: item.sale_date, reverse=True)
+        ]
+    return summary
 
 
 def format_decimal(value):
@@ -162,9 +172,9 @@ def format_decimal(value):
     return format(value.quantize(Decimal("0.01")), "f")
 
 
-def serialize_customer(customer):
-    summary = summarize_customer_finances(customer)
-    return {
+def serialize_customer(customer, include_history=True):
+    summary = summarize_customer_finances(customer, include_history=include_history)
+    payload = {
         "id": customer.id,
         "business_id": customer.business_id,
         "full_name": customer.full_name,
@@ -176,7 +186,9 @@ def serialize_customer(customer):
         "amount_paid": summary["amount_paid"],
         "refund_total": summary["refund_total"],
         "outstanding_balance": summary["outstanding_balance"],
-        "purchase_history": summary["purchase_history"],
         "created_at": normalized_datetime(customer.created_at).isoformat(),
         "updated_at": normalized_datetime(customer.updated_at).isoformat(),
     }
+    if include_history:
+        payload["purchase_history"] = summary["purchase_history"]
+    return payload
