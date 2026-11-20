@@ -57,7 +57,7 @@ The Stage 1 entity design is documented in [DATABASE.md](DATABASE.md). Stage 4 i
 
 ## Authentication and authorization
 
-Stage 3 implements verified identities, Argon2id password hashing, password-plus-OTP login, revocable server-side sessions, one-time verification/reset tokens, CSRF protection, and server-enforced membership-role checks. Stage 4 applies those controls to every implemented business data family. Authentication OTPs are sent through the Resend service adapter; only keyed hashes of OTPs are stored. Authentication uses a random opaque `HttpOnly` cookie; only its SHA-256 digest is stored. The React client obtains a CSRF token from the API and sends it in `X-CSRFToken` on mutations. Production cookies are `Secure`, `SameSite=Lax`, and use the `__Host-` prefix. A business context must be resolved from the authenticated user's active membership, not trusted from a client-supplied business ID alone. No bearer token or browser local-storage credential is used.
+Stage 3 implements verified identities, Argon2id password hashing, password-plus-OTP login, revocable server-side sessions, one-time verification/reset tokens, CSRF protection, and server-enforced membership-role checks. Stage 4 applies those controls to every implemented business data family. Authentication OTPs can be delivered through configured Resend or authenticated SMTP transports; only keyed hashes of OTPs are stored. Authentication uses a random opaque `HttpOnly` cookie; only its SHA-256 digest is stored. The React client obtains a CSRF token from the API and sends it in `X-CSRFToken` on mutations. Production cookies are `Secure`, `SameSite=Lax`, and use the `__Host-` prefix. A business context must be resolved from the authenticated user's active membership, not trusted from a client-supplied business ID alone. No bearer token or browser local-storage credential is used.
 
 ## Subscription architecture
 
@@ -65,7 +65,7 @@ Represent subscription state and plan entitlements in the backend. A central ent
 
 ## AI integration architecture
 
-Add a backend AI service boundary in a later stage. The backend should assemble only the minimum authorised business context, enforce plan quotas before provider calls, track usage and provider outcomes, and avoid sending unnecessary personal data. AI output must be presented as assistance rather than guaranteed financial, tax, or legal advice. Store only conversation/history data required by an explicit retention policy. Voice is out of initial scope.
+Stage 5 adds a backend AI service boundary. The backend assembles only the minimum authorised business context, enforces monthly reply limits before provider calls, tracks successful replies and provider outcomes, and avoids sending unnecessary personal data. AI output is assistance rather than guaranteed financial, tax, or legal advice. Conversations and messages are tenant- and user-owned. Provider credentials remain backend-only environment configuration. Voice is out of initial scope.
 
 ## Payment integration architecture
 

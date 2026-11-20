@@ -64,7 +64,7 @@ flask --app run db upgrade
 python run.py
 ```
 
-Before running, edit the ignored `backend/.env` and replace the local placeholder `SECRET_KEY` with a random value. For local sign-in without an email provider, set `AUTH_EMAIL_MODE=console`; authentication OTPs will be printed to the backend terminal. To deliver OTPs by email, set `AUTH_EMAIL_MODE=resend`, `RESEND_API_KEY`, and `MAIL_FROM` to a sender address verified with Resend. Console delivery is rejected outside local development. Do not commit credentials. SMTP settings are optional and only used for non-OTP account notifications.
+Before running, edit the ignored `backend/.env` and replace the local placeholder `SECRET_KEY` with a random value. To deliver authentication OTPs through Gmail, set `AUTH_EMAIL_MODE=smtp`, `MAIL_SERVER=smtp.gmail.com`, `MAIL_PORT=587`, `MAIL_USE_TLS=1`, and set `MAIL_USERNAME`, `MAIL_PASSWORD`, and `MAIL_DEFAULT_SENDER` to your Gmail address, Google app password, and sender address. Gmail requires 2-Step Verification and an app password; do not use your normal Gmail password. Alternatively, use `AUTH_EMAIL_MODE=resend`, `RESEND_API_KEY`, and `MAIL_FROM` with a verified Resend sender. `AUTH_EMAIL_MODE=console` is for local development only and prints codes to the backend terminal. Do not commit credentials.
 
 Generate a local secret in PowerShell with:
 
@@ -94,8 +94,9 @@ Open the local URL printed by Vite (normally `http://localhost:5173`). The Vite 
 ## Account and workspace
 
 The public landing page is at `/`. Real account screens are available at `/login`, `/register`, and `/forgot-password`. Registration sends a six-digit verification OTP, then signs in and opens the dashboard after successful verification. Login checks the password, sends a separate six-digit OTP, and creates a session only after that code is verified. Password recovery uses its own OTP. `/app/*` routes require a verified account and sign-in. Business profile, customer, product, inventory, sales, expenses, dashboard, and report screens use authenticated business-scoped APIs. Business reports and CSV downloads are available from the Reports screen. Currency is currently NGN and is not user-configurable. The AI assistant is clearly marked as a Stage 5 preview and does not send business data to an AI provider. See [STAGE_4_REPORT.md](STAGE_4_REPORT.md) for implementation status, financial definitions, verification evidence, and remaining acceptance checks.
+The Stage 5 assistant uses deterministic backend business context and stores authorized conversations. Configure `AI_API_KEY`, `AI_BASE_URL`, `AI_MODEL`, `AI_API_FORMAT`, `AI_CHAT_PATH`, `AI_AUTH_SCHEME`, `AI_TIMEOUT_SECONDS`, and `AI_MAX_CONTEXT_MESSAGES` in the ignored backend `.env`. Real instructor-provider behavior remains unverified until provider documentation and credentials are supplied.
 
-Authentication OTPs expire after ten minutes, are limited to five incorrect attempts, and can be resent after a 60-second cooldown. Local console mode prints codes to the backend terminal; Resend email mode is available for delivered email. Failed registration email delivery rolls back the pending account and membership.
+Authentication OTPs expire after ten minutes, are limited to five incorrect attempts, and can be resent after a 60-second cooldown. SMTP and Resend modes deliver OTPs by email; local console mode prints codes to the backend terminal. Failed registration email delivery rolls back the pending account and membership.
 
 Pricing is intentionally shown as “Coming soon.” Payment processing and AI responses are not connected. See [STAGE_2_REPORT.md](STAGE_2_REPORT.md) for completed interface details and verification results.
 

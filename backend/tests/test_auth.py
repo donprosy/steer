@@ -266,6 +266,82 @@ def test_account_otp_uses_resend_api_and_html_template(app, monkeypatch):
     assert "expires in <strong>10 minutes</strong>" in captured["message"]["html"]
 
 
+def test_account_otp_uses_authenticated_smtp_when_selected(app, monkeypatch):
+    from app.services import email_service
+
+    captured = {}
+
+    class FakeSMTP:
+        def __init__(self, server, port, timeout):
+            captured["connection"] = (server, port, timeout)
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            return False
+
+        def starttls(self, context):
+            captured["tls"] = context
+
+        def ehlo(self):
+            captured["ehlo"] = True
+
+        def login(self, username, password):
+            captured["credentials"] = (username, password)
+
+        def send_message(self, message):
+            captured["message"] = message
+
+    monkeypatch.setattr(email_service.smtplib, "SMTP", FakeSMTP)
+    app.config.update(
+        AUTH_EMAIL_MODE="smtp",
+        AUTH_EMAIL_SENDER=None,
+        MAIL_SERVER="smtp.gmail.com",
+        MAIL_PORT=587,
+        MAIL_USERNAME="owner@gmail.com",
+        MAIL_PASSWORD="test-app-password",
+        MAIL_USE_TLS=True,
+        MAIL_USE_SSL=False,
+        MAIL_DEFAULT_SENDER="owner@gmail.com",
+        MAIL_FROM=None,
+    )
+
+    with app.app_context():
+        email_service.send_account_token(
+            SimpleNamespace(email="recipient@example.test", display_name="Business Owner"),
+            LOGIN_OTP,
+            "012345",
+        )
+
+    message = captured["message"]
+    assert captured["connection"] == ("smtp.gmail.com", 587, 15)
+    assert captured["credentials"] == ("owner@gmail.com", "test-app-password")
+    assert captured["ehlo"] is True
+    assert message["To"] == "recipient@example.test"
+    assert message["From"] == "STEER <owner@gmail.com>"
+    assert "012345" in message.get_body(("html",)).get_content()
+
+
+def test_smtp_otp_requires_complete_configuration(app, client, csrf_headers):
+    app.config.update(
+        AUTH_EMAIL_MODE="smtp",
+        AUTH_EMAIL_SENDER=None,
+        RESEND_API_KEY=None,
+        MAIL_SERVER="smtp.gmail.com",
+        MAIL_USERNAME="",
+        MAIL_PASSWORD="",
+        MAIL_DEFAULT_SENDER="",
+        MAIL_FROM="",
+    )
+
+    response = register_account(client, csrf_headers)
+
+    assert response.status_code == 503
+    assert response.get_json()["error"]["code"] == "email_delivery_unavailable"
+    assert "code" not in response.get_json()
+
+
 def test_invalid_registration_is_validated_before_email_configuration(client, csrf_headers):
     response = client.post(
         f"{AUTH_URL}/register",

@@ -59,10 +59,24 @@ def _require_email_delivery_configuration():
         and current_app.config.get("AUTH_EMAIL_MODE") == "console"
     ):
         return None
-    if not current_app.config.get("RESEND_API_KEY") or not (
-        current_app.config.get("MAIL_DEFAULT_SENDER")
-        or current_app.config.get("MAIL_FROM")
-    ):
+    sender = current_app.config.get("MAIL_DEFAULT_SENDER") or current_app.config.get(
+        "MAIL_FROM"
+    )
+    mode = current_app.config.get("AUTH_EMAIL_MODE")
+    if mode == "smtp":
+        configured = all(
+            (
+                current_app.config.get("MAIL_SERVER"),
+                sender,
+                current_app.config.get("MAIL_USERNAME"),
+                current_app.config.get("MAIL_PASSWORD"),
+                current_app.config.get("MAIL_USE_TLS")
+                != current_app.config.get("MAIL_USE_SSL"),
+            )
+        )
+    else:
+        configured = bool(current_app.config.get("RESEND_API_KEY") and sender)
+    if not configured:
         return error_response(
             "email_delivery_unavailable",
             "Email delivery is not configured. Contact the administrator.",

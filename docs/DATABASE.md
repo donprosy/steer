@@ -21,6 +21,8 @@ PostgreSQL is the planned production database; SQLAlchemy is the persistence lay
 | `subscriptions` | Business subscription lifecycle | Belongs to a business and plan; stores status, billing interval, provider reference, period boundaries, and cancellation/expiry state. |
 | `payments` | Payment transactions and reconciliation | Belongs to a subscription/business; provider transaction reference, amount/currency, status, and verified timestamps; unique provider reference. |
 | `ai_usage_records` | AI quota and cost accounting | Belongs to a business and initiating user when available; tracks feature, request/result status, units, and provider metadata without secrets or unnecessary prompt content. |
+| `ai_conversations` | Tenant-owned AI chat sessions | User and business ownership, title and timestamps; removed with the owning business or user. |
+| `ai_messages` | Conversation message history | User/assistant role, content, request idempotency key and provider metadata; cascades with its conversation. |
 | `audit_events` | Sensitive administrative and ownership changes | Actor, business scope where applicable, action, target identifier, timestamp, and carefully redacted metadata. |
 
 ## Relationship outline

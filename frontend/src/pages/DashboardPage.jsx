@@ -11,6 +11,7 @@ import {
   ProductPage,
   ReportsPage as BusinessReportsPage,
 } from "./BusinessPages.jsx";
+import AssistantPage from "./AssistantPage.jsx";
 
 const money = (value) =>
   new Intl.NumberFormat("en-NG", {
@@ -702,7 +703,7 @@ function DashboardPage({ page, businessId, businessRole, onProfileSaved, user })
     case "settings":
       return <BusinessProfilePage businessId={businessId} businessRole={businessRole} user={user} onProfileSaved={onProfileSaved} />;
     case "assistant":
-      return <div className="empty-state">The AI business assistant is planned for Stage 5. No business data is sent to an AI provider.</div>;
+      return <AssistantPage businessId={businessId} />;
     default:
       return <OverviewPage data={dashboard?.business_id === businessId ? dashboard : null} loading={loading} error={dashboardError} range={salesRange} onRangeChange={(value) => { setSalesRange(value); setSalesPage(1); }} />;
   }

@@ -83,6 +83,21 @@ def create_app(test_config=None):
         AUTH_EMAIL_MODE=str(auth_email_mode).strip().lower(),
         RATELIMIT_STORAGE_URI=os.environ.get("RATELIMIT_STORAGE_URI", "memory://"),
         RATELIMIT_ENABLED=app_environment != "testing",
+        AI_API_KEY=os.environ.get("AI_API_KEY"),
+        AI_BASE_URL=os.environ.get("AI_BASE_URL"),
+        AI_MODEL=os.environ.get("AI_MODEL"),
+        AI_API_FORMAT=os.environ.get("AI_API_FORMAT", "openai_chat").strip().lower(),
+        AI_CHAT_PATH=os.environ.get("AI_CHAT_PATH", "/chat/completions"),
+        AI_AUTH_SCHEME=os.environ.get("AI_AUTH_SCHEME", "Bearer"),
+        AI_TIMEOUT_SECONDS=float(os.environ.get("AI_TIMEOUT_SECONDS", "30")),
+        AI_MAX_CONTEXT_MESSAGES=int(os.environ.get("AI_MAX_CONTEXT_MESSAGES", "12")),
+        AI_DEFAULT_PLAN_LIMIT=int(os.environ.get("AI_DEFAULT_PLAN_LIMIT", "100")),
+        AI_DEFAULT_PLAN_KEY=os.environ.get("AI_DEFAULT_PLAN_KEY", "starter").strip().lower(),
+        AI_PLAN_LIMITS={
+            "starter": int(os.environ.get("AI_STARTER_LIMIT", "100")),
+            "growth": int(os.environ.get("AI_GROWTH_LIMIT", "500")),
+            "business": int(os.environ.get("AI_BUSINESS_LIMIT", "1500")),
+        },
     )
 
     app.config.update(test_config)
@@ -126,8 +141,8 @@ def create_app(test_config=None):
 def _validate_security_configuration(app):
     """Reject production configurations that would weaken auth guarantees."""
     email_mode = app.config.get("AUTH_EMAIL_MODE", "resend")
-    if email_mode not in {"resend", "console"}:
-        raise RuntimeError("AUTH_EMAIL_MODE must be 'resend' or 'console'.")
+    if email_mode not in {"resend", "smtp", "console"}:
+        raise RuntimeError("AUTH_EMAIL_MODE must be 'resend', 'smtp', or 'console'.")
     if email_mode == "console" and app.config["APP_ENV"] != "development":
         raise RuntimeError("Console authentication email is available only in development.")
 
@@ -140,12 +155,25 @@ def _validate_security_configuration(app):
                 "Production rate limiting requires shared storage; configure "
                 "RATELIMIT_STORAGE_URI."
             )
-        if not app.config.get("RESEND_API_KEY") or not (
-            app.config.get("MAIL_DEFAULT_SENDER") or app.config.get("MAIL_FROM")
+        sender = app.config.get("MAIL_DEFAULT_SENDER") or app.config.get("MAIL_FROM")
+        if email_mode == "resend" and (
+            not app.config.get("RESEND_API_KEY") or not sender
         ):
             raise RuntimeError(
-                "Production authentication email requires RESEND_API_KEY and MAIL_DEFAULT_SENDER."
+                "Production Resend authentication email requires RESEND_API_KEY and MAIL_DEFAULT_SENDER."
             )
+        if email_mode == "smtp":
+            if not all(
+                (
+                    app.config.get("MAIL_SERVER"),
+                    sender,
+                    app.config.get("MAIL_USERNAME"),
+                    app.config.get("MAIL_PASSWORD"),
+                )
+            ):
+                raise RuntimeError(
+                    "Production SMTP authentication email requires MAIL_SERVER, MAIL_USERNAME, MAIL_PASSWORD, and MAIL_DEFAULT_SENDER."
+                )
         if app.config.get("MAIL_SERVER"):
             if app.config.get("MAIL_USE_TLS") == app.config.get("MAIL_USE_SSL"):
                 raise RuntimeError(

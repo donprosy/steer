@@ -12,6 +12,9 @@ from app.models.product import Product
 from app.models.sale import Sale
 from app.models.sale_item import SaleItem
 from app.models.user import User
+from app.models.ai_conversation import AiConversation
+from app.models.ai_message import AiMessage
+from app.models.ai_usage import AiUsageRecord
 
 __all__ = [
     "AuthSession",
@@ -26,4 +29,7 @@ __all__ = [
     "Sale",
     "SaleItem",
     "User",
+    "AiConversation",
+    "AiMessage",
+    "AiUsageRecord",
 ]

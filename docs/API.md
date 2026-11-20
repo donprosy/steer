@@ -47,16 +47,16 @@ List responses contain `customers` and `pagination` (`page`, `per_page`, `total`
 | Method and path | Responsibility |
 |---|---|
 | `GET /api/v1/auth/csrf` | Return a CSRF token for same-origin requests. Send it as `X-CSRFToken` on every `POST`, `PUT`, `PATCH`, and `DELETE`. |
-| `POST /api/v1/auth/register` | Validate name, email, password, confirmation, and business name; atomically create an unverified account, owner membership, and verification OTP only if Resend delivery succeeds. Returns `202`; duplicate email returns `409`. Configure `RESEND_API_KEY` and a verified sender address. |
+| `POST /api/v1/auth/register` | Validate name, email, password, confirmation, and business name; atomically create an unverified account, owner membership, and verification OTP only if configured email delivery succeeds. Returns `202`; duplicate email returns `409`. Configure Resend or authenticated SMTP. |
 | `POST /api/v1/auth/login` | Verify credentials and email status, send a login OTP, and return a pending `challenge_id`; accepts optional `remember_me`. Does not create a session. |
 | `POST /api/v1/auth/otp/send` | Alias for the password-check step at `/login`; accepts email, password, and optional `remember_me`, and sends a login OTP. |
 | `POST /api/v1/auth/otp/resend` | Resend a login OTP using its `challenge_id`; enforces the per-account 60-second cooldown and generic responses for invalid challenges. |
 | `POST /api/v1/auth/otp/verify` | Verify a login `challenge_id` and 6-digit code; issues the server-side session and opaque `HttpOnly` cookie only on success. |
 | `POST /api/v1/auth/logout` | Revoke the current server-side session and clear its cookie. |
 | `GET /api/v1/auth/me` | Return the current identity and active business memberships; requires authentication. |
-| `POST /api/v1/auth/verification-requests` | Send a 6-digit verification OTP through Resend without disclosing whether an account is eligible. Enforces per-IP rate limits and a per-account 60-second cooldown. |
+| `POST /api/v1/auth/verification-requests` | Send a 6-digit verification OTP through the configured email transport without disclosing whether an account is eligible. Enforces per-IP rate limits and a per-account 60-second cooldown. |
 | `POST /api/v1/auth/email-verifications` | Verify a matching email and 6-digit verification OTP; expires after 10 minutes, allows up to five incorrect attempts, and creates the signed-in session on success. |
-| `POST /api/v1/auth/password-reset-requests` | Start privacy-preserving recovery by emailing a 6-digit reset OTP through Resend; enforces a 60-second cooldown. |
+| `POST /api/v1/auth/password-reset-requests` | Start privacy-preserving recovery by emailing a 6-digit reset OTP through the configured email transport; enforces a 60-second cooldown. |
 | `POST /api/v1/auth/password-resets` | Validate email and reset OTP, require matching new-password confirmation, and revoke all existing sessions. |
 
 Email verification and password reset OTP endpoints accept `{"email":"person@example.com","code":"012345"}`. Login OTP endpoints accept `{"email":"person@example.com","password":"...","remember_me":false}` to send a code, `{"challenge_id":"..."}` to resend, and `{"challenge_id":"...","code":"012345"}` to verify. Registration also accepts `confirm_password`; password reset accepts `password` and `confirm_password`. OTP values are generated with a cryptographic random generator, stored as a keyed HMAC digest, scoped to user and purpose, and never returned in API responses. They expire after 10 minutes, are single-use, and stop accepting guesses after five incorrect attempts. New codes invalidate previous codes of the same purpose. Resend endpoints return a generic response during cooldown and for ineligible accounts to reduce account enumeration.
@@ -71,7 +71,7 @@ Mutating endpoints are CSRF-protected. The frontend fetches `/api/v1/auth/csrf` 
 {"error":{"code":"validation_error","message":"Enter a valid email address."}}
 ```
 
-Unverified accounts cannot sign in. Successful login OTP verification creates an authenticated session. Email-dependent OTP operations return `503` when Resend is not configured or delivery fails. Set `RESEND_API_KEY` and `MAIL_FROM` to a sender address verified with Resend. Non-OTP account notifications continue to use optional SMTP settings.
+Unverified accounts cannot sign in. Successful login OTP verification creates an authenticated session. Email-dependent OTP operations return `503` when the selected email transport is not configured or delivery fails. Set `AUTH_EMAIL_MODE=smtp` with authenticated SMTP settings (for Gmail, use `smtp.gmail.com:587`, STARTTLS, and a Google app password), or set `AUTH_EMAIL_MODE=resend` with `RESEND_API_KEY` and a verified sender. Non-OTP account notifications use SMTP settings.
 
 ## Product and inventory management (Stage 4)
 
@@ -115,6 +115,24 @@ Inventory adjustments use `POST /api/v1/businesses/{business_id}/products/{produ
 | `GET /api/v1/businesses/{business_id}/reports/export?type=sales&range=this_month` | CSV export for supported report categories. Text cells are escaped and formula-prefixed content neutralized. |
 
 Dashboard and report ranges accept `today`, `this_week`, `this_month`, `this_year`, or `custom`. Custom ranges require ISO `start_date` and `end_date`; date-only end dates include the full day. Currency is currently NGN.
+
+## AI assistant (Stage 5)
+
+All assistant endpoints require authentication and active business membership. Mutations require CSRF protection. Conversations are owned by both the authenticated user and the active business.
+
+| Method and path | Responsibility |
+|---|---|
+| `GET /api/v1/businesses/{business_id}/assistant/conversations` | List the current user's conversations for the business. |
+| `POST /api/v1/businesses/{business_id}/assistant/conversations` | Create a conversation. |
+| `GET /api/v1/businesses/{business_id}/assistant/conversations/{conversation_id}` | Retrieve a conversation and its messages. |
+| `PATCH /api/v1/businesses/{business_id}/assistant/conversations/{conversation_id}` | Rename a conversation owned by the current user. |
+| `DELETE /api/v1/businesses/{business_id}/assistant/conversations/{conversation_id}` | Delete a conversation owned by the current user. |
+| `POST /api/v1/businesses/{business_id}/assistant/chat` | Send one read-only business question and receive a provider-assisted response. |
+| `GET /api/v1/businesses/{business_id}/assistant/usage` | Read current-month successful-reply usage and remaining replies. |
+| `GET /api/v1/businesses/{business_id}/assistant/insights?period=this_month` | Read deterministic database-backed insights without an AI provider call. |
+| `GET /api/v1/businesses/{business_id}/assistant/reports?period=this_month` | Read a deterministic database-backed business report without an AI provider call. |
+
+Chat payload fields are `message` (required), `conversation_id` (optional), `period` (`today`, `this_week`, `this_month`, `this_year`) and `request_id` (optional idempotency key). Provider failures do not count toward usage. The AI cannot execute SQL or mutate business records.
 
 ## Planned endpoint groups
 

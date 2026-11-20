@@ -1,4 +1,4 @@
-"""Resend delivery for account OTPs and SMTP delivery for notifications."""
+"""Resend and SMTP delivery for account emails and notifications."""
 import json
 import smtplib
 import ssl
@@ -37,7 +37,10 @@ def send_account_token(user, purpose, code):
         return
 
     subject, text, html = render_otp_email(user.display_name, purpose, code)
-    _send_resend_message(user.email, subject, text, html)
+    if current_app.config.get("AUTH_EMAIL_MODE") == "smtp":
+        _send_message(user.email, subject, text, html)
+    else:
+        _send_resend_message(user.email, subject, text, html)
 
 
 def send_account_notification(user, notification):

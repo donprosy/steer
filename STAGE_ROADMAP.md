@@ -32,13 +32,15 @@ Each stage should be reviewed and accepted before moving into the next. Scope is
 
 The Stage 4 implementation now includes business profiles, customers and purchase history, the product/service catalogue, inventory movements, sales and payments/refunds/cancellations, searchable and paginated expenses, live dashboard trends and metrics, multi-category reports, and CSV exports. Formal exit still requires pilot workflow reconciliation, production-PostgreSQL migration verification, and browser-driven multi-business/role acceptance. See `STAGE_4_REPORT.md`.
 
-## 5. AI business assistant
+## 5. AI business assistant — implementation in progress
 
 - Select a provider only after cost, privacy, retention, and quality evaluation.
 - Add text conversations and business analysis through a backend service boundary with permission-scoped context.
 - Track usage, enforce quotas, disclose limitations, and test prompt/data privacy behavior.
 - Voice AI remains explicitly out of initial scope and requires a separate product/security decision.
 - Exit: quality, privacy, safety, usage accounting, and unit economics meet agreed thresholds.
+
+Stage 5 now includes persistent tenant-owned conversations/messages, a backend provider adapter, deterministic business-context retrieval, direct insights/reports, usage accounting and a responsive chat interface. Real provider activation remains gated by instructor API documentation and credentials. No provider key is stored or claimed active.
 
 ### Stage 5 handoff preparation
 

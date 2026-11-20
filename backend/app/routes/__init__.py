@@ -10,6 +10,7 @@ from app.routes.health import health
 from app.routes.products import products
 from app.routes.reports import reports
 from app.routes.sales import sales
+from app.routes.assistant import assistant
 
 api = Blueprint("api", __name__)
 api.register_blueprint(health)
@@ -20,3 +21,4 @@ api.register_blueprint(products, url_prefix="/businesses")
 api.register_blueprint(sales, url_prefix="/businesses")
 api.register_blueprint(expenses, url_prefix="/businesses")
 api.register_blueprint(reports, url_prefix="/businesses")
+api.register_blueprint(assistant, url_prefix="/businesses")
